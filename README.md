@@ -25,7 +25,8 @@ Install with uv
 git clone https://github.com/hsbyeon1/boltz.git
 cd boltz
 conda env create -f environment.yaml
-uv pip install -e .[cuda]
+conda activate boltz
+uv pip install -e .
 ```
 
 If you are installing on CPU-only or non-CUDA GPus hardware, remove `[cuda]` from the above commands. Note that the CPU version is significantly slower than the GPU version.
