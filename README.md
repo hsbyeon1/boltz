@@ -25,6 +25,7 @@ Install with uv
 git clone https://github.com/hsbyeon1/boltz.git
 cd boltz
 conda env create -f environment.yaml
+conda activate boltz
 uv pip install -e .
 ```
 
