@@ -20,19 +20,12 @@ All the code and weights are provided under MIT license, making them freely avai
 
 ## Installation
 
-> Note: we recommend installing boltz in a fresh python environment
-
-Install boltz with PyPI (recommended):
-
+Install with uv
 ```
-pip install boltz[cuda] -U
-```
-
-or directly from GitHub for daily updates:
-
-```
-git clone https://github.com/jwohlwend/boltz.git
-cd boltz; pip install -e .[cuda]
+git clone https://github.com/hsbyeon1/boltz.git
+cd boltz
+conda env create -f environment.yaml
+uv pip install -e .[cuda]
 ```
 
 If you are installing on CPU-only or non-CUDA GPus hardware, remove `[cuda]` from the above commands. Note that the CPU version is significantly slower than the GPU version.
@@ -54,7 +47,7 @@ There are two main predictions in the affinity output: `affinity_pred_value` and
 ## Authentication to MSA Server
 
 When using the `--use_msa_server` option with a server that requires authentication, you can provide credentials in one of two ways. More information is available in our [prediction instructions](docs/prediction.md).
- 
+
 ## Evaluation
 
 ⚠️ **Coming soon: updated evaluation code for Boltz-2!**
