@@ -122,12 +122,18 @@ class ParsedResidue:
     atom_disto: int
     is_standard: bool
     is_present: bool
-    rdkit_bounds_constraints: Optional[list[ParsedRDKitBoundsConstraint]] = None
+    rdkit_bounds_constraints: Optional[list[ParsedRDKitBoundsConstraint]] = (
+        None
+    )
     chiral_atom_constraints: Optional[list[ParsedChiralAtomConstraint]] = None
     stereo_bond_constraints: Optional[list[ParsedStereoBondConstraint]] = None
     planar_bond_constraints: Optional[list[ParsedPlanarBondConstraint]] = None
-    planar_ring_5_constraints: Optional[list[ParsedPlanarRing5Constraint]] = None
-    planar_ring_6_constraints: Optional[list[ParsedPlanarRing6Constraint]] = None
+    planar_ring_5_constraints: Optional[list[ParsedPlanarRing5Constraint]] = (
+        None
+    )
+    planar_ring_6_constraints: Optional[list[ParsedPlanarRing6Constraint]] = (
+        None
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -293,7 +299,10 @@ def get_experiment_conditions(
             temperature = float(block.find([key])[0][0])
             break
 
-    keys_ph = ["_exptl_crystal_grow.pH", "_pdbx_nmr_exptl_sample_conditions.pH"]
+    keys_ph = [
+        "_exptl_crystal_grow.pH",
+        "_pdbx_nmr_exptl_sample_conditions.pH",
+    ]
     with contextlib.suppress(Exception):
         for key in keys_ph:
             ph = float(block.find([key])[0][0])
@@ -382,7 +391,9 @@ def compute_covalent_ligands(
     return covalent_chain_ids
 
 
-def compute_interfaces(atom_data: np.ndarray, chain_data: np.ndarray) -> np.ndarray:
+def compute_interfaces(
+    atom_data: np.ndarray, chain_data: np.ndarray
+) -> np.ndarray:
     """Compute the chain-chain interfaces from a gemmi structure.
 
     Parameters
@@ -446,7 +457,8 @@ def compute_geometry_constraints(mol: Mol, idx_map):
         useMacrocycle14config=False,
     )
     bonds = set(
-        tuple(sorted(b)) for b in mol.GetSubstructMatches(Chem.MolFromSmarts("*~*"))
+        tuple(sorted(b))
+        for b in mol.GetSubstructMatches(Chem.MolFromSmarts("*~*"))
     )
     angles = set(
         tuple(sorted([a[0], a[2]]))
@@ -484,7 +496,10 @@ def compute_chiral_atom_constraints(mol, idx_map):
             neighbors = tuple(neighbor[0] for neighbor in neighbors)
             is_r = orientation == "R"
 
-            if len(neighbors) > 4 or center.GetHybridization() != HybridizationType.SP3:
+            if (
+                len(neighbors) > 4
+                or center.GetHybridization() != HybridizationType.SP3
+            ):
                 continue
 
             atom_idxs = (*neighbors[:3], center_idx)
@@ -499,7 +514,9 @@ def compute_chiral_atom_constraints(mol, idx_map):
 
             if len(neighbors) == 4:
                 for skip_idx in range(3):
-                    chiral_set = neighbors[:skip_idx] + neighbors[skip_idx + 1 :]
+                    chiral_set = (
+                        neighbors[:skip_idx] + neighbors[skip_idx + 1 :]
+                    )
                     if skip_idx % 2 == 0:
                         atom_idxs = chiral_set[::-1] + (center_idx,)
                     else:
@@ -527,20 +544,28 @@ def compute_stereo_bond_constraints(mol, idx_map):
                 )
                 start_neighbors = [
                     (neighbor.GetIdx(), int(neighbor.GetProp("_CIPRank")))
-                    for neighbor in mol.GetAtomWithIdx(start_atom_idx).GetNeighbors()
+                    for neighbor in mol.GetAtomWithIdx(
+                        start_atom_idx
+                    ).GetNeighbors()
                     if neighbor.GetIdx() != end_atom_idx
                 ]
                 start_neighbors = sorted(
-                    start_neighbors, key=lambda neighbor: neighbor[1], reverse=True
+                    start_neighbors,
+                    key=lambda neighbor: neighbor[1],
+                    reverse=True,
                 )
                 start_neighbors = [neighbor[0] for neighbor in start_neighbors]
                 end_neighbors = [
                     (neighbor.GetIdx(), int(neighbor.GetProp("_CIPRank")))
-                    for neighbor in mol.GetAtomWithIdx(end_atom_idx).GetNeighbors()
+                    for neighbor in mol.GetAtomWithIdx(
+                        end_atom_idx
+                    ).GetNeighbors()
                     if neighbor.GetIdx() != start_atom_idx
                 ]
                 end_neighbors = sorted(
-                    end_neighbors, key=lambda neighbor: neighbor[1], reverse=True
+                    end_neighbors,
+                    key=lambda neighbor: neighbor[1],
+                    reverse=True,
                 )
                 end_neighbors = [neighbor[0] for neighbor in end_neighbors]
                 is_e = stereo == BondStereo.STEREOE
@@ -579,8 +604,12 @@ def compute_stereo_bond_constraints(mol, idx_map):
 
 
 def compute_flatness_constraints(mol, idx_map):
-    planar_double_bond_smarts = Chem.MolFromSmarts("[C;X3;^2](*)(*)=[C;X3;^2](*)(*)")
-    aromatic_ring_5_smarts = Chem.MolFromSmarts("[ar5^2]1[ar5^2][ar5^2][ar5^2][ar5^2]1")
+    planar_double_bond_smarts = Chem.MolFromSmarts(
+        "[C;X3;^2](*)(*)=[C;X3;^2](*)(*)"
+    )
+    aromatic_ring_5_smarts = Chem.MolFromSmarts(
+        "[ar5^2]1[ar5^2][ar5^2][ar5^2][ar5^2]1"
+    )
     aromatic_ring_6_smarts = Chem.MolFromSmarts(
         "[ar6^2]1[ar6^2][ar6^2][ar6^2][ar6^2][ar6^2]1"
     )
@@ -591,17 +620,23 @@ def compute_flatness_constraints(mol, idx_map):
     for match in mol.GetSubstructMatches(planar_double_bond_smarts):
         if all(i in idx_map for i in match):
             planar_double_bond_constraints.append(
-                ParsedPlanarBondConstraint(atom_idxs=tuple(idx_map[i] for i in match))
+                ParsedPlanarBondConstraint(
+                    atom_idxs=tuple(idx_map[i] for i in match)
+                )
             )
     for match in mol.GetSubstructMatches(aromatic_ring_5_smarts):
         if all(i in idx_map for i in match):
             aromatic_ring_5_constraints.append(
-                ParsedPlanarRing5Constraint(atom_idxs=tuple(idx_map[i] for i in match))
+                ParsedPlanarRing5Constraint(
+                    atom_idxs=tuple(idx_map[i] for i in match)
+                )
             )
     for match in mol.GetSubstructMatches(aromatic_ring_6_smarts):
         if all(i in idx_map for i in match):
             aromatic_ring_6_constraints.append(
-                ParsedPlanarRing6Constraint(atom_idxs=tuple(idx_map[i] for i in match))
+                ParsedPlanarRing6Constraint(
+                    atom_idxs=tuple(idx_map[i] for i in match)
+                )
             )
 
     return (
@@ -766,9 +801,11 @@ def parse_ccd_residue(  # noqa: PLR0915, C901
     rdkit_bounds_constraints = compute_geometry_constraints(ref_mol, idx_map)
     chiral_atom_constraints = compute_chiral_atom_constraints(ref_mol, idx_map)
     stereo_bond_constraints = compute_stereo_bond_constraints(ref_mol, idx_map)
-    planar_bond_constraints, planar_ring_5_constraints, planar_ring_6_constraints = (
-        compute_flatness_constraints(ref_mol, idx_map)
-    )
+    (
+        planar_bond_constraints,
+        planar_ring_5_constraints,
+        planar_ring_6_constraints,
+    ) = compute_flatness_constraints(ref_mol, idx_map)
 
     unk_prot_id = const.unk_token_ids["PROTEIN"]
     return ParsedResidue(
@@ -1252,7 +1289,9 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
                     moldir=moldir,
                 )
                 if parsed_polymer is not None:
-                    ensemble_chains[ref_chain_map[subchain_id]] = parsed_polymer
+                    ensemble_chains[ref_chain_map[subchain_id]] = (
+                        parsed_polymer
+                    )
 
             # Parse a non-polymer
             elif entity_type in {"NonPolymer", "Branched"}:
@@ -1287,10 +1326,14 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
                         residues=residues,
                         type=const.chain_type_ids["NONPOLYMER"],
                     )
-                    ensemble_chains[ref_chain_map[subchain_id]] = parsed_non_polymer
+                    ensemble_chains[ref_chain_map[subchain_id]] = (
+                        parsed_non_polymer
+                    )
 
         # Ensure ensemble chains are in the same order as reference structure
-        ensemble_chains = [ensemble_chains[idx] for idx in range(len(ensemble_chains))]
+        ensemble_chains = [
+            ensemble_chains[idx] for idx in range(len(ensemble_chains))
+        ]
         all_ensembles.append(ensemble_chains)
 
     # Parse covalent connections
@@ -1343,7 +1386,10 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
         assert len(ensemble_chains) == len(all_ensembles)
         for ensemble_chain in ensemble_chains:
             assert len(ensemble_chain.residues) == res_num
-            assert sum(len(res.atoms) for res in ensemble_chain.residues) == atom_num
+            assert (
+                sum(len(res.atoms) for res in ensemble_chain.residues)
+                == atom_num
+            )
 
         # Find all copies of this chain in the assembly
         entity_id = entity_ids[chain.name]
@@ -1371,7 +1417,8 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
         for i, res in enumerate(chain.residues):
             # Get same residue across models in ensemble
             ensemble_residues = [
-                ensemble_chain.residues[i] for ensemble_chain in ensemble_chains
+                ensemble_chain.residues[i]
+                for ensemble_chain in ensemble_chains
             ]
             assert len(ensemble_residues) == len(all_ensembles)
             for ensemble_res in ensemble_residues:
@@ -1485,7 +1532,8 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
             for a_idx, atom in enumerate(res.atoms):
                 # Get same atom across models in ensemble
                 ensemble_atoms = [
-                    ensemble_res.atoms[a_idx] for ensemble_res in ensemble_residues
+                    ensemble_res.atoms[a_idx]
+                    for ensemble_res in ensemble_residues
                 ]
                 assert len(ensemble_atoms) == len(all_ensembles)
                 for e_idx, ensemble_atom in enumerate(ensemble_atoms):
@@ -1518,8 +1566,12 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
     for conn in connections:
         chain_1_idx = chain_to_idx[conn.chain_1]
         chain_2_idx = chain_to_idx[conn.chain_2]
-        res_1_idx, atom_1_offset = res_to_idx[(conn.chain_1, conn.residue_index_1)]
-        res_2_idx, atom_2_offset = res_to_idx[(conn.chain_2, conn.residue_index_2)]
+        res_1_idx, atom_1_offset = res_to_idx[
+            (conn.chain_1, conn.residue_index_1)
+        ]
+        res_2_idx, atom_2_offset = res_to_idx[
+            (conn.chain_2, conn.residue_index_2)
+        ]
         atom_1_idx = atom_1_offset + conn.atom_index_1
         atom_2_idx = atom_2_offset + conn.atom_index_2
         bond_data.append(

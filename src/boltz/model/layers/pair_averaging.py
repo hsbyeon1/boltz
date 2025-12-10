@@ -81,7 +81,9 @@ class PairWeightedAveraging(nn.Module):
                 sliced_weight_proj_g = self.proj_g.weight[
                     head_idx * self.c_h : (head_idx + 1) * self.c_h, :
                 ]
-                sliced_weight_proj_z = self.proj_z.weight[head_idx : (head_idx + 1), :]
+                sliced_weight_proj_z = self.proj_z.weight[
+                    head_idx : (head_idx + 1), :
+                ]
                 sliced_weight_proj_o = self.proj_o.weight[
                     :, head_idx * self.c_h : (head_idx + 1) * self.c_h
                 ]

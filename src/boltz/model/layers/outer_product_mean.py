@@ -29,7 +29,9 @@ class OuterProductMean(nn.Module):
         init.final_init_(self.proj_o.weight)
         init.final_init_(self.proj_o.bias)
 
-    def forward(self, m: Tensor, mask: Tensor, chunk_size: int = None) -> Tensor:
+    def forward(
+        self, m: Tensor, mask: Tensor, chunk_size: int = None
+    ) -> Tensor:
         """Forward pass.
 
         Parameters
@@ -59,11 +61,13 @@ class OuterProductMean(nn.Module):
             for i in range(0, mask.shape[1], 64):
                 if i == 0:
                     num_mask = (
-                        mask[:, i : i + 64, None, :] * mask[:, i : i + 64, :, None]
+                        mask[:, i : i + 64, None, :]
+                        * mask[:, i : i + 64, :, None]
                     ).sum(1)
                 else:
                     num_mask += (
-                        mask[:, i : i + 64, None, :] * mask[:, i : i + 64, :, None]
+                        mask[:, i : i + 64, None, :]
+                        * mask[:, i : i + 64, :, None]
                     ).sum(1)
             num_mask = num_mask.clamp(min=1)
 

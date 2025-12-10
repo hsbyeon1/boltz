@@ -59,7 +59,13 @@ def parse_fasta(  # noqa: C901, PLR0912
         assert len(header) >= 2, f"Invalid record id: {seq_record.id}"
 
         chain_id, entity_type = header[:2]
-        if entity_type.lower() not in {"protein", "dna", "rna", "ccd", "smiles"}:
+        if entity_type.lower() not in {
+            "protein",
+            "dna",
+            "rna",
+            "ccd",
+            "smiles",
+        }:
             msg = f"Invalid entity type: {entity_type}"
             raise ValueError(msg)
         if chain_id == "":

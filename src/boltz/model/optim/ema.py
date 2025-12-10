@@ -137,7 +137,8 @@ class EMA(Callback):
             ema_weight = self._ema_weights[k]
             if (
                 ema_weight.data.dtype != torch.long  # noqa: PLR1714
-                and orig_weight.data.dtype != torch.long  # skip non-trainable weights
+                and orig_weight.data.dtype
+                != torch.long  # skip non-trainable weights
             ):
                 diff = ema_weight.data - orig_weight.data
                 diff.mul_(1.0 - decay)
@@ -186,7 +187,9 @@ class EMA(Callback):
         if self.ema_initialized:
             checkpoint["ema"] = self.state_dict()
 
-    def on_train_start(self, trainer: Trainer, pl_module: LightningModule) -> None:  # noqa: ARG002
+    def on_train_start(
+        self, trainer: Trainer, pl_module: LightningModule
+    ) -> None:  # noqa: ARG002
         """Initialize EMA weights and move to device.
 
         Parameters
@@ -200,7 +203,8 @@ class EMA(Callback):
         # Create EMA weights if not already initialized
         if not self.ema_initialized:
             self._ema_weights = {
-                k: p.detach().clone() for k, p in pl_module.state_dict().items()
+                k: p.detach().clone()
+                for k, p in pl_module.state_dict().items()
             }
 
         # Move EMA weights to the correct device
@@ -246,7 +250,8 @@ class EMA(Callback):
 
         """
         self._weights_buffer = {
-            k: p.detach().clone().to("cpu") for k, p in pl_module.state_dict().items()
+            k: p.detach().clone().to("cpu")
+            for k, p in pl_module.state_dict().items()
         }
         pl_module.load_state_dict(self._ema_weights, strict=False)
 

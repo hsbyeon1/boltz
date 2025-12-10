@@ -19,7 +19,10 @@ def kernel_triangular_mult(
     g_out_weight,
     eps,
 ):
-    from cuequivariance_torch.primitives.triangle import triangle_multiplicative_update
+    from cuequivariance_torch.primitives.triangle import (
+        triangle_multiplicative_update,
+    )
+
     return triangle_multiplicative_update(
         x,
         direction=direction,
@@ -70,7 +73,9 @@ class TriangleMultiplicationOutgoing(nn.Module):
         init.final_init_(self.p_out.weight)
         init.gating_init_(self.g_out.weight)
 
-    def forward(self, x: Tensor, mask: Tensor, use_kernels: bool = False) -> Tensor:
+    def forward(
+        self, x: Tensor, mask: Tensor, use_kernels: bool = False
+    ) -> Tensor:
         """Perform a forward pass.
 
         Parameters
@@ -158,7 +163,9 @@ class TriangleMultiplicationIncoming(nn.Module):
         init.final_init_(self.p_out.weight)
         init.gating_init_(self.g_out.weight)
 
-    def forward(self, x: Tensor, mask: Tensor, use_kernels: bool = False) -> Tensor:
+    def forward(
+        self, x: Tensor, mask: Tensor, use_kernels: bool = False
+    ) -> Tensor:
         """Perform a forward pass.
 
         Parameters

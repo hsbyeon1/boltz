@@ -3,7 +3,9 @@ from torch import Tensor
 from torch.nn.functional import pad
 
 
-def pad_dim(data: Tensor, dim: int, pad_len: float, value: float = 0) -> Tensor:
+def pad_dim(
+    data: Tensor, dim: int, pad_len: float, value: float = 0
+) -> Tensor:
     """Pad a tensor along a given dimension.
 
     Parameters
@@ -75,7 +77,9 @@ def pad_to_max(data: list[Tensor], value: float = 0) -> tuple[Tensor, Tensor]:
         pad(torch.ones_like(d), pad_len, value=0)
         for d, pad_len in zip(data, pad_lengths)
     ]
-    data = [pad(d, pad_len, value=value) for d, pad_len in zip(data, pad_lengths)]
+    data = [
+        pad(d, pad_len, value=value) for d, pad_len in zip(data, pad_lengths)
+    ]
 
     # Stack the data
     padding = torch.stack(padding, dim=0)

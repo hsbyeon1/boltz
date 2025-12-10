@@ -68,13 +68,19 @@ def to_mmcif(
 
         if mol_type == const.chain_type_ids["PROTEIN"]:
             alphabet = ihm.LPeptideAlphabet()
-            chem_comp = lambda x: ihm.LPeptideChemComp(id=x, code=x, code_canonical="X")  # noqa: E731
+            chem_comp = lambda x: ihm.LPeptideChemComp(
+                id=x, code=x, code_canonical="X"
+            )  # noqa: E731
         elif mol_type == const.chain_type_ids["DNA"]:
             alphabet = ihm.DNAAlphabet()
-            chem_comp = lambda x: ihm.DNAChemComp(id=x, code=x, code_canonical="N")  # noqa: E731
+            chem_comp = lambda x: ihm.DNAChemComp(
+                id=x, code=x, code_canonical="N"
+            )  # noqa: E731
         elif mol_type == const.chain_type_ids["RNA"]:
             alphabet = ihm.RNAAlphabet()
-            chem_comp = lambda x: ihm.RNAChemComp(id=x, code=x, code_canonical="N")  # noqa: E731
+            chem_comp = lambda x: ihm.RNAChemComp(
+                id=x, code=x, code_canonical="N"
+            )  # noqa: E731
         elif len(sequence) > 1:
             alphabet = {}
             chem_comp = lambda x: ihm.SaccharideChemComp(id=x)  # noqa: E731
@@ -121,7 +127,9 @@ def to_mmcif(
                 id=chain_tag,
             )
         asym_unit_map[chain_idx] = asym
-    modeled_assembly = Assembly(asym_unit_map.values(), name="Modeled assembly")
+    modeled_assembly = Assembly(
+        asym_unit_map.values(), name="Modeled assembly"
+    )
 
     class _LocalPLDDT(modelcif.qa_metric.Local, modelcif.qa_metric.PLDDT):
         name = "pLDDT"
@@ -168,17 +176,27 @@ def to_mmcif(
                             atom_name = str(atom["name"])
                             atom_key = re.sub(r"\d", "", atom_name)
                             if atom_key in const.ambiguous_atoms:
-                                if isinstance(const.ambiguous_atoms[atom_key], str):
+                                if isinstance(
+                                    const.ambiguous_atoms[atom_key], str
+                                ):
                                     element = const.ambiguous_atoms[atom_key]
-                                elif res_name in const.ambiguous_atoms[atom_key]:
-                                    element = const.ambiguous_atoms[atom_key][res_name]
+                                elif (
+                                    res_name in const.ambiguous_atoms[atom_key]
+                                ):
+                                    element = const.ambiguous_atoms[atom_key][
+                                        res_name
+                                    ]
                                 else:
-                                    element = const.ambiguous_atoms[atom_key]["*"]
+                                    element = const.ambiguous_atoms[atom_key][
+                                        "*"
+                                    ]
                             else:
                                 element = atom_key[0]
                         else:
                             atom_name = atom["name"]
-                            atom_name = [chr(c + 32) for c in atom_name if c != 0]
+                            atom_name = [
+                                chr(c + 32) for c in atom_name if c != 0
+                            ]
                             atom_name = "".join(atom_name)
                             element = periodic_table.GetElementSymbol(
                                 atom["element"].item()
@@ -193,7 +211,10 @@ def to_mmcif(
                                 100.00
                                 if plddts is None
                                 else round(
-                                    plddts[res_num + ligand_index_offset].item() * 100,
+                                    plddts[
+                                        res_num + ligand_index_offset
+                                    ].item()
+                                    * 100,
                                     3,
                                 )
                             )
@@ -206,7 +227,8 @@ def to_mmcif(
                                 if plddts is None
                                 else round(
                                     plddts[
-                                        prev_polymer_resnum + ligand_index_offset
+                                        prev_polymer_resnum
+                                        + ligand_index_offset
                                     ].item()
                                     * 100,
                                     3,
@@ -260,7 +282,10 @@ def to_mmcif(
                             _LocalPLDDT(
                                 asym_unit_map[chain_idx].residue(residue_idx),
                                 round(
-                                    plddts[res_num + ligand_index_offset].item() * 100,
+                                    plddts[
+                                        res_num + ligand_index_offset
+                                    ].item()
+                                    * 100,
                                     3,
                                 ),
                             )

@@ -240,7 +240,9 @@ class AtomDiffusion(Module):
         return (self.sigma_data**2) / (sigma**2 + self.sigma_data**2)
 
     def c_out(self, sigma):
-        return sigma * self.sigma_data / torch.sqrt(self.sigma_data**2 + sigma**2)
+        return (
+            sigma * self.sigma_data / torch.sqrt(self.sigma_data**2 + sigma**2)
+        )
 
     def c_in(self, sigma):
         return 1 / torch.sqrt(sigma**2 + self.sigma_data**2)
@@ -274,7 +276,9 @@ class AtomDiffusion(Module):
         return denoised_coords
 
     def sample_schedule(self, num_sampling_steps=None):
-        num_sampling_steps = default(num_sampling_steps, self.num_sampling_steps)
+        num_sampling_steps = default(
+            num_sampling_steps, self.num_sampling_steps
+        )
         inv_rho = 1 / self.rho
 
         steps = torch.arange(
@@ -289,7 +293,9 @@ class AtomDiffusion(Module):
 
         sigmas = sigmas * self.sigma_data
 
-        sigmas = F.pad(sigmas, (0, 1), value=0.0)  # last step is sigma value of 0.
+        sigmas = F.pad(
+            sigmas, (0, 1), value=0.0
+        )  # last step is sigma value of 0.
         return sigmas
 
     def sample(
@@ -311,9 +317,9 @@ class AtomDiffusion(Module):
         if steering_args["fk_steering"]:
             multiplicity = multiplicity * steering_args["num_particles"]
             energy_traj = torch.empty((multiplicity, 0), device=self.device)
-            resample_weights = torch.ones(multiplicity, device=self.device).reshape(
-                -1, steering_args["num_particles"]
-            )
+            resample_weights = torch.ones(
+                multiplicity, device=self.device
+            ).reshape(-1, steering_args["num_particles"])
         if (
             steering_args["physical_guidance_update"]
             or steering_args["contact_guidance_update"]
@@ -326,7 +332,9 @@ class AtomDiffusion(Module):
         if max_parallel_samples is None:
             max_parallel_samples = multiplicity
 
-        num_sampling_steps = default(num_sampling_steps, self.num_sampling_steps)
+        num_sampling_steps = default(
+            num_sampling_steps, self.num_sampling_steps
+        )
         atom_mask = atom_mask.repeat_interleave(multiplicity, 0)
 
         shape = (*atom_mask.shape, 3)
@@ -347,18 +355,26 @@ class AtomDiffusion(Module):
         atom_coords_denoised = None
 
         # gradually denoise
-        for step_idx, (sigma_tm, sigma_t, gamma) in enumerate(sigmas_and_gammas):
+        for step_idx, (sigma_tm, sigma_t, gamma) in enumerate(
+            sigmas_and_gammas
+        ):
             random_R, random_tr = compute_random_augmentation(
-                multiplicity, device=atom_coords.device, dtype=atom_coords.dtype
+                multiplicity,
+                device=atom_coords.device,
+                dtype=atom_coords.dtype,
             )
             atom_coords = atom_coords - atom_coords.mean(dim=-2, keepdims=True)
             atom_coords = (
                 torch.einsum("bmd,bds->bms", atom_coords, random_R) + random_tr
             )
             if atom_coords_denoised is not None:
-                atom_coords_denoised -= atom_coords_denoised.mean(dim=-2, keepdims=True)
+                atom_coords_denoised -= atom_coords_denoised.mean(
+                    dim=-2, keepdims=True
+                )
                 atom_coords_denoised = (
-                    torch.einsum("bmd,bds->bms", atom_coords_denoised, random_R)
+                    torch.einsum(
+                        "bmd,bds->bms", atom_coords_denoised, random_R
+                    )
                     + random_tr
                 )
             if (
@@ -369,7 +385,11 @@ class AtomDiffusion(Module):
                     "bmd,bds->bms", scaled_guidance_update, random_R
                 )
 
-            sigma_tm, sigma_t, gamma = sigma_tm.item(), sigma_t.item(), gamma.item()
+            sigma_tm, sigma_t, gamma = (
+                sigma_tm.item(),
+                sigma_t.item(),
+                gamma.item(),
+            )
 
             t_hat = sigma_tm * (1 + gamma)
             steering_t = 1.0 - (step_idx / num_sampling_steps)
@@ -379,21 +399,27 @@ class AtomDiffusion(Module):
 
             with torch.no_grad():
                 atom_coords_denoised = torch.zeros_like(atom_coords_noisy)
-                sample_ids = torch.arange(multiplicity).to(atom_coords_noisy.device)
+                sample_ids = torch.arange(multiplicity).to(
+                    atom_coords_noisy.device
+                )
                 sample_ids_chunks = sample_ids.chunk(
                     multiplicity % max_parallel_samples + 1
                 )
 
                 for sample_ids_chunk in sample_ids_chunks:
-                    atom_coords_denoised_chunk = self.preconditioned_network_forward(
-                        atom_coords_noisy[sample_ids_chunk],
-                        t_hat,
-                        network_condition_kwargs=dict(
-                            multiplicity=sample_ids_chunk.numel(),
-                            **network_condition_kwargs,
-                        ),
+                    atom_coords_denoised_chunk = (
+                        self.preconditioned_network_forward(
+                            atom_coords_noisy[sample_ids_chunk],
+                            t_hat,
+                            network_condition_kwargs=dict(
+                                multiplicity=sample_ids_chunk.numel(),
+                                **network_condition_kwargs,
+                            ),
+                        )
                     )
-                    atom_coords_denoised[sample_ids_chunk] = atom_coords_denoised_chunk
+                    atom_coords_denoised[sample_ids_chunk] = (
+                        atom_coords_denoised_chunk
+                    )
 
                 if steering_args["fk_steering"] and (
                     (
@@ -412,8 +438,13 @@ class AtomDiffusion(Module):
                                 network_condition_kwargs["feats"],
                                 parameters,
                             )
-                            energy += parameters["resampling_weight"] * component_energy
-                    energy_traj = torch.cat((energy_traj, energy.unsqueeze(1)), dim=1)
+                            energy += (
+                                parameters["resampling_weight"]
+                                * component_energy
+                            )
+                    energy_traj = torch.cat(
+                        (energy_traj, energy.unsqueeze(1)), dim=1
+                    )
 
                     # Compute log G values
                     if step_idx == 0:
@@ -434,9 +465,9 @@ class AtomDiffusion(Module):
 
                     # Compute resampling weights
                     resample_weights = F.softmax(
-                        (ll_difference + steering_args["fk_lambda"] * log_G).reshape(
-                            -1, steering_args["num_particles"]
-                        ),
+                        (
+                            ll_difference + steering_args["fk_lambda"] * log_G
+                        ).reshape(-1, steering_args["num_particles"]),
                         dim=1,
                     )
 
@@ -447,12 +478,17 @@ class AtomDiffusion(Module):
                 ) and step_idx < num_sampling_steps - 1:
                     guidance_update = torch.zeros_like(atom_coords_denoised)
                     for guidance_step in range(steering_args["num_gd_steps"]):
-                        energy_gradient = torch.zeros_like(atom_coords_denoised)
+                        energy_gradient = torch.zeros_like(
+                            atom_coords_denoised
+                        )
                         for potential in potentials:
-                            parameters = potential.compute_parameters(steering_t)
+                            parameters = potential.compute_parameters(
+                                steering_t
+                            )
                             if (
                                 parameters["guidance_weight"] > 0
-                                and (guidance_step) % parameters["guidance_interval"]
+                                and (guidance_step)
+                                % parameters["guidance_interval"]
                                 == 0
                             ):
                                 energy_gradient += parameters[
@@ -489,7 +525,8 @@ class AtomDiffusion(Module):
                         )
                         + resample_weights.shape[1]
                         * torch.arange(
-                            resample_weights.shape[0], device=resample_weights.device
+                            resample_weights.shape[0],
+                            device=resample_weights.device,
                         ).unsqueeze(-1)
                     ).flatten()
 
@@ -497,7 +534,9 @@ class AtomDiffusion(Module):
                     atom_coords_noisy = atom_coords_noisy[resample_indices]
                     atom_mask = atom_mask[resample_indices]
                     if atom_coords_denoised is not None:
-                        atom_coords_denoised = atom_coords_denoised[resample_indices]
+                        atom_coords_denoised = atom_coords_denoised[
+                            resample_indices
+                        ]
                     energy_traj = energy_traj[resample_indices]
                     if (
                         steering_args["physical_guidance_update"]
@@ -520,9 +559,12 @@ class AtomDiffusion(Module):
 
                 atom_coords_noisy = atom_coords_noisy.to(atom_coords_denoised)
 
-            denoised_over_sigma = (atom_coords_noisy - atom_coords_denoised) / t_hat
+            denoised_over_sigma = (
+                atom_coords_noisy - atom_coords_denoised
+            ) / t_hat
             atom_coords_next = (
-                atom_coords_noisy + step_scale * (sigma_t - t_hat) * denoised_over_sigma
+                atom_coords_noisy
+                + step_scale * (sigma_t - t_hat) * denoised_over_sigma
             )
 
             atom_coords = atom_coords_next
@@ -530,7 +572,9 @@ class AtomDiffusion(Module):
         return dict(sample_atom_coords=atom_coords, diff_token_repr=token_repr)
 
     def loss_weight(self, sigma):
-        return (sigma**2 + self.sigma_data**2) / ((sigma * self.sigma_data) ** 2)
+        return (sigma**2 + self.sigma_data**2) / (
+            (sigma * self.sigma_data) ** 2
+        )
 
     def noise_distribution(self, batch_size):
         return (
@@ -608,13 +652,17 @@ class AtomDiffusion(Module):
 
             if filter_by_plddt > 0:
                 plddt_mask = feats["plddt"] > filter_by_plddt
-                resolved_atom_mask_uni = resolved_atom_mask_uni * plddt_mask.float()
+                resolved_atom_mask_uni = (
+                    resolved_atom_mask_uni * plddt_mask.float()
+                )
 
             resolved_atom_mask = resolved_atom_mask_uni.repeat_interleave(
                 multiplicity, 0
             )
 
-            align_weights = denoised_atom_coords.new_ones(denoised_atom_coords.shape[:2])
+            align_weights = denoised_atom_coords.new_ones(
+                denoised_atom_coords.shape[:2]
+            )
             atom_type = (
                 torch.bmm(
                     feats["atom_to_token"].float(),
@@ -631,8 +679,12 @@ class AtomDiffusion(Module):
                     1
                     + nucleotide_loss_weight
                     * (
-                        torch.eq(atom_type_mult, const.chain_type_ids["DNA"]).float()
-                        + torch.eq(atom_type_mult, const.chain_type_ids["RNA"]).float()
+                        torch.eq(
+                            atom_type_mult, const.chain_type_ids["DNA"]
+                        ).float()
+                        + torch.eq(
+                            atom_type_mult, const.chain_type_ids["RNA"]
+                        ).float()
                     )
                     + ligand_loss_weight
                     * torch.eq(
@@ -653,8 +705,8 @@ class AtomDiffusion(Module):
             )
 
             # Cast back
-            atom_coords_aligned_ground_truth = atom_coords_aligned_ground_truth.to(
-                denoised_atom_coords
+            atom_coords_aligned_ground_truth = (
+                atom_coords_aligned_ground_truth.to(denoised_atom_coords)
             )
 
             # weighted MSE loss of denoised atom positions
@@ -663,7 +715,10 @@ class AtomDiffusion(Module):
             ).sum(dim=-1)
             mse_loss = torch.sum(
                 mse_loss * align_weights * resolved_atom_mask, dim=-1
-            ) / (torch.sum(3 * align_weights * resolved_atom_mask, dim=-1) + 1e-5)
+            ) / (
+                torch.sum(3 * align_weights * resolved_atom_mask, dim=-1)
+                + 1e-5
+            )
 
             # weight by sigma factor
             loss_weights = self.loss_weight(sigmas)

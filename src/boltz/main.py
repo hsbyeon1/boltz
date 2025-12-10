@@ -34,7 +34,9 @@ from boltz.model.models.boltz1 import Boltz1
 from boltz.model.models.boltz2 import Boltz2
 
 CCD_URL = "https://huggingface.co/boltz-community/boltz-1/resolve/main/ccd.pkl"
-MOL_URL = "https://huggingface.co/boltz-community/boltz-2/resolve/main/mols.tar"
+MOL_URL = (
+    "https://huggingface.co/boltz-community/boltz-2/resolve/main/mols.tar"
+)
 
 BOLTZ1_URL_WITH_FALLBACK = [
     "https://model-gateway.boltz.bio/boltz1_conf.ckpt",
@@ -304,7 +306,13 @@ def check_inputs(data: Path) -> list[Path]:
             if d.is_dir():
                 msg = f"Found directory {d} instead of .fasta or .yaml."
                 raise RuntimeError(msg)
-            if d.suffix.lower() not in (".fa", ".fas", ".fasta", ".yml", ".yaml"):
+            if d.suffix.lower() not in (
+                ".fa",
+                ".fas",
+                ".fasta",
+                ".yml",
+                ".yaml",
+            ):
                 msg = (
                     f"Unable to parse filetype {d.suffix}, "
                     "please provide a .fasta or .yaml file."
@@ -347,7 +355,9 @@ def filter_inputs_structure(
 
     # Remove them from the input data
     if existing and not override:
-        manifest = Manifest([r for r in manifest.records if r.id not in existing])
+        manifest = Manifest(
+            [r for r in manifest.records if r.id not in existing]
+        )
         msg = (
             f"Found some existing predictions ({len(existing)}), "
             f"skipping and running only the missing ones, "
@@ -396,7 +406,9 @@ def filter_inputs_affinity(
 
     # Remove them from the input data
     if existing and not override:
-        manifest = Manifest([r for r in manifest.records if r.id not in existing])
+        manifest = Manifest(
+            [r for r in manifest.records if r.id not in existing]
+        )
         num_skipped = len(existing)
         msg = (
             f"Found some existing affinity predictions ({num_skipped}), "
@@ -447,7 +459,9 @@ def compute_msa(
         Custom header value for API key authentication (overrides --api_key if set).
 
     """
-    click.echo(f"Calling MSA server for target {target_id} with {len(data)} sequences")
+    click.echo(
+        f"Calling MSA server for target {target_id} with {len(data)} sequences"
+    )
     click.echo(f"MSA server URL: {msa_server_url}")
     click.echo(f"MSA pairing strategy: {msa_pairing_strategy}")
 
@@ -457,7 +471,9 @@ def compute_msa(
         key = api_key_header if api_key_header else "X-API-Key"
         value = api_key_value
         auth_headers = {"Content-Type": "application/json", key: value}
-        click.echo(f"Using API key authentication for MSA server (header: {key})")
+        click.echo(
+            f"Using API key authentication for MSA server (header: {key})"
+        )
     elif msa_server_username and msa_server_password:
         click.echo("Using basic authentication for MSA server")
     else:
@@ -525,7 +541,9 @@ def compute_msa(
         keys = keys + [-1] * len(unpaired)
 
         # Dump MSA
-        csv_str = ["key,sequence"] + [f"{key},{seq}" for key, seq in zip(keys, seqs)]
+        csv_str = ["key,sequence"] + [
+            f"{key},{seq}" for key, seq in zip(keys, seqs)
+        ]
 
         msa_path = msa_dir / f"{name}.csv"
         with msa_path.open("w") as f:
@@ -560,7 +578,9 @@ def process_input(  # noqa: C901, PLR0912, PLR0915, D103
         elif path.suffix.lower() in (".yml", ".yaml"):
             target = parse_yaml(path, ccd, mol_dir, boltz2)
         elif path.is_dir():
-            msg = f"Found directory {path} instead of .fasta or .yaml, skipping."
+            msg = (
+                f"Found directory {path} instead of .fasta or .yaml, skipping."
+            )
             raise RuntimeError(msg)  # noqa: TRY301
         else:
             msg = (
@@ -608,7 +628,9 @@ def process_input(  # noqa: C901, PLR0912, PLR0915, D103
             )
 
         # Parse MSA data
-        msas = sorted({c.msa_id for c in target.record.chains if c.msa_id != -1})
+        msas = sorted(
+            {c.msa_id for c in target.record.chains if c.msa_id != -1}
+        )
         msa_id_map = {}
         for msa_idx, msa_id in enumerate(msas):
             # Check that raw MSA exists
@@ -631,7 +653,9 @@ def process_input(  # noqa: C901, PLR0912, PLR0915, D103
                 elif msa_path.suffix == ".csv":
                     msa: MSA = parse_csv(msa_path, max_seqs=max_msa_seqs)
                 else:
-                    msg = f"MSA file {msa_path} not supported, only a3m or csv."
+                    msg = (
+                        f"MSA file {msa_path} not supported, only a3m or csv."
+                    )
                     raise RuntimeError(msg)  # noqa: TRY301
 
                 msa.dump(processed)
@@ -648,7 +672,9 @@ def process_input(  # noqa: C901, PLR0912, PLR0915, D103
             template.dump(template_path)
 
         # Dump constraints
-        constraints_path = processed_constraints_dir / f"{target.record.id}.npz"
+        constraints_path = (
+            processed_constraints_dir / f"{target.record.id}.npz"
+        )
         target.residue_constraints.dump(constraints_path)
 
         # Dump extra molecules
@@ -803,7 +829,9 @@ def process_inputs(
 
     # Parse input data
     preprocessing_threads = min(preprocessing_threads, len(data))
-    click.echo(f"Processing {len(data)} inputs with {preprocessing_threads} threads.")
+    click.echo(
+        f"Processing {len(data)} inputs with {preprocessing_threads} threads."
+    )
 
     if preprocessing_threads > 1 and len(data) > 1:
         with Pool(preprocessing_threads) as pool:
@@ -1213,7 +1241,9 @@ def predict(  # noqa: C901, PLR0915, PLR0912
             else None
         ),
         extra_mols_dir=(
-            (processed_dir / "mols") if (processed_dir / "mols").exists() else None
+            (processed_dir / "mols")
+            if (processed_dir / "mols").exists()
+            else None
         ),
     )
 
@@ -1358,7 +1388,9 @@ def predict(  # noqa: C901, PLR0915, PLR0912
             override=override,
         )
         if not manifest_filtered.records:
-            click.echo("Found existing affinity predictions for all inputs, skipping.")
+            click.echo(
+                "Found existing affinity predictions for all inputs, skipping."
+            )
             return
 
         msg = f"Running affinity prediction for {len(manifest_filtered.records)} input"

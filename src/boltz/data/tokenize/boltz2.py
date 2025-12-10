@@ -264,9 +264,9 @@ def tokenize_structure(  # noqa: C901, PLR0915
 
                 # Get atom coordinates
                 atom_data = struct.atoms[atom_start:atom_end]
-                atom_coords = struct.coords[offset + atom_start : offset + atom_end][
-                    "coords"
-                ]
+                atom_coords = struct.coords[
+                    offset + atom_start : offset + atom_end
+                ]["coords"]
 
                 # Tokenize each atom
                 for i, atom in enumerate(atom_data):
@@ -361,7 +361,10 @@ def tokenize_structure(  # noqa: C901, PLR0915
 
     # Add atom-atom bonds from ligands
     for bond in struct.bonds:
-        if bond["atom_1"] not in atom_to_token or bond["atom_2"] not in atom_to_token:
+        if (
+            bond["atom_1"] not in atom_to_token
+            or bond["atom_2"] not in atom_to_token
+        ):
             continue
         token_bond = (
             atom_to_token[bond["atom_1"]],
@@ -403,7 +406,9 @@ class Boltz2Tokenizer(Tokenizer):
             template_tokens = {}
             template_bonds = {}
             for template_id, template in data.templates.items():
-                tmpl_token_data, tmpl_token_bonds = tokenize_structure(template)
+                tmpl_token_data, tmpl_token_bonds = tokenize_structure(
+                    template
+                )
                 template_tokens[template_id] = tmpl_token_data
                 template_bonds[template_id] = tmpl_token_bonds
         else:

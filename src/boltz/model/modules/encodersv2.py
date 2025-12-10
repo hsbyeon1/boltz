@@ -37,12 +37,19 @@ class RelativePositionEncoder(Module):
     """Algorithm 3."""
 
     def __init__(
-        self, token_z, r_max=32, s_max=2, fix_sym_check=False, cyclic_pos_enc=False
+        self,
+        token_z,
+        r_max=32,
+        s_max=2,
+        fix_sym_check=False,
+        cyclic_pos_enc=False,
     ):
         super().__init__()
         self.r_max = r_max
         self.s_max = s_max
-        self.linear_layer = LinearNoBias(4 * (r_max + 1) + 2 * (s_max + 1) + 1, token_z)
+        self.linear_layer = LinearNoBias(
+            4 * (r_max + 1) + 2 * (s_max + 1) + 1, token_z
+        )
         self.fix_sym_check = fix_sym_check
         self.cyclic_pos_enc = cyclic_pos_enc
 
@@ -51,14 +58,16 @@ class RelativePositionEncoder(Module):
             feats["asym_id"][:, :, None], feats["asym_id"][:, None, :]
         )
         b_same_residue = torch.eq(
-            feats["residue_index"][:, :, None], feats["residue_index"][:, None, :]
+            feats["residue_index"][:, :, None],
+            feats["residue_index"][:, None, :],
         )
         b_same_entity = torch.eq(
             feats["entity_id"][:, :, None], feats["entity_id"][:, None, :]
         )
 
         d_residue = (
-            feats["residue_index"][:, :, None] - feats["residue_index"][:, None, :]
+            feats["residue_index"][:, :, None]
+            - feats["residue_index"][:, None, :]
         )
 
         if self.cyclic_pos_enc and torch.any(feats["cyclic_period"] > 0):
@@ -67,7 +76,9 @@ class RelativePositionEncoder(Module):
                 feats["cyclic_period"],
                 torch.zeros_like(feats["cyclic_period"]) + 10000,
             )
-            d_residue = (d_residue - period * torch.round(d_residue / period)).long()
+            d_residue = (
+                d_residue - period * torch.round(d_residue / period)
+            ).long()
 
         d_residue = torch.clip(
             d_residue + self.r_max,
@@ -75,7 +86,9 @@ class RelativePositionEncoder(Module):
             2 * self.r_max,
         )
         d_residue = torch.where(
-            b_same_chain, d_residue, torch.zeros_like(d_residue) + 2 * self.r_max + 1
+            b_same_chain,
+            d_residue,
+            torch.zeros_like(d_residue) + 2 * self.r_max + 1,
         )
         a_rel_pos = one_hot(d_residue, 2 * self.r_max + 2)
 
@@ -94,7 +107,9 @@ class RelativePositionEncoder(Module):
         a_rel_token = one_hot(d_token, 2 * self.r_max + 2)
 
         d_chain = torch.clip(
-            feats["sym_id"][:, :, None] - feats["sym_id"][:, None, :] + self.s_max,
+            feats["sym_id"][:, :, None]
+            - feats["sym_id"][:, None, :]
+            + self.s_max,
             0,
             2 * self.s_max,
         )
@@ -148,7 +163,8 @@ class SingleConditioning(Module):
         transitions = ModuleList([])
         for _ in range(num_transitions):
             transition = Transition(
-                dim=2 * token_s, hidden=transition_expansion_factor * 2 * token_s
+                dim=2 * token_s,
+                hidden=transition_expansion_factor * 2 * token_s,
             )
             transitions.append(transition)
 
@@ -237,9 +253,9 @@ def single_to_keys(single, indexing_matrix, W, H):
     B, N, D = single.shape
     K = N // W
     single = single.view(B, 2 * K, W // 2, D)
-    return torch.einsum("b j i d, j k -> b k i d", single, indexing_matrix).reshape(
-        B, K, H, D
-    )  # j = 2K, i = W//2, k = h * K
+    return torch.einsum(
+        "b j i d, j k -> b k i d", single, indexing_matrix
+    ).reshape(B, K, H, D)  # j = 2K, i = W//2, k = h * K
 
 
 class AtomEncoder(Module):
@@ -322,7 +338,9 @@ class AtomEncoder(Module):
                 feats["ref_element"],
             ]
             if not self.use_no_atom_char:
-                atom_feats.append(feats["ref_atom_name_chars"].reshape(B, N, 4 * 64))
+                atom_feats.append(
+                    feats["ref_atom_name_chars"].reshape(B, N, 4 * 64)
+                )
             if self.use_atom_backbone_feat:
                 atom_feats.append(feats["atom_backbone_feat"])
             if self.use_residue_feats_atoms:
@@ -355,14 +373,18 @@ class AtomEncoder(Module):
             atom_ref_pos_keys = to_keys(atom_ref_pos).view(B, K, 1, H, 3)
 
             d = atom_ref_pos_keys - atom_ref_pos_queries  # Float['b k w h 3']
-            d_norm = torch.sum(d * d, dim=-1, keepdim=True)  # Float['b k w h 1']
+            d_norm = torch.sum(
+                d * d, dim=-1, keepdim=True
+            )  # Float['b k w h 1']
             d_norm = 1 / (
                 1 + d_norm
             )  # AF3 feeds in the reciprocal of the distance norm
 
             atom_mask_queries = atom_mask.view(B, K, W, 1)
             atom_mask_keys = (
-                to_keys(atom_mask.unsqueeze(-1).float()).view(B, K, 1, H).bool()
+                to_keys(atom_mask.unsqueeze(-1).float())
+                .view(B, K, 1, H)
+                .bool()
             )
             atom_uid_queries = atom_uid.view(B, K, W, 1)
             atom_uid_keys = (
@@ -386,7 +408,9 @@ class AtomEncoder(Module):
 
             if self.structure_prediction:
                 # run only in structure model not in initial encoding
-                atom_to_token = feats["atom_to_token"].float()  # Long['b m n'],
+                atom_to_token = feats[
+                    "atom_to_token"
+                ].float()  # Long['b m n'],
 
                 s_to_c = self.s_to_c_trans(s_trunk.float())
                 s_to_c = torch.bmm(atom_to_token, s_to_c)
@@ -406,7 +430,9 @@ class AtomEncoder(Module):
                 p = p + z_to_p.to(p)
 
             p = p + self.c_to_p_trans_q(c.view(B, K, W, 1, c.shape[-1]))
-            p = p + self.c_to_p_trans_k(to_keys(c).view(B, K, 1, H, c.shape[-1]))
+            p = p + self.c_to_p_trans_k(
+                to_keys(c).view(B, K, 1, H, c.shape[-1])
+            )
             p = p + self.p_mlp(p)
         return q, c, p, to_keys
 
@@ -443,7 +469,9 @@ class AtomAttentionEncoder(Module):
         )
 
         self.atom_to_token_trans = nn.Sequential(
-            LinearNoBias(atom_s, 2 * token_s if structure_prediction else token_s),
+            LinearNoBias(
+                atom_s, 2 * token_s if structure_prediction else token_s
+            ),
             nn.ReLU(),
         )
 

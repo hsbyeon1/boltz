@@ -227,7 +227,10 @@ def get_experiment_conditions(
             temperature = float(block.find([key])[0][0])
             break
 
-    keys_ph = ["_exptl_crystal_grow.pH", "_pdbx_nmr_exptl_sample_conditions.pH"]
+    keys_ph = [
+        "_exptl_crystal_grow.pH",
+        "_pdbx_nmr_exptl_sample_conditions.pH",
+    ]
     with contextlib.suppress(Exception):
         for key in keys_ph:
             ph = float(block.find([key])[0][0])
@@ -316,7 +319,9 @@ def compute_covalent_ligands(
     return covalent_chain_ids
 
 
-def compute_interfaces(atom_data: np.ndarray, chain_data: np.ndarray) -> np.ndarray:
+def compute_interfaces(
+    atom_data: np.ndarray, chain_data: np.ndarray
+) -> np.ndarray:
     """Compute the chain-chain interfaces from a gemmi structure.
 
     Parameters
@@ -987,7 +992,9 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
                     moldir=moldir,
                 )
                 if parsed_polymer is not None:
-                    ensemble_chains[ref_chain_map[subchain_id]] = parsed_polymer
+                    ensemble_chains[ref_chain_map[subchain_id]] = (
+                        parsed_polymer
+                    )
 
             # Parse a non-polymer
             elif entity_type in {"NonPolymer", "Branched"}:
@@ -1022,10 +1029,14 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
                         residues=residues,
                         type=const.chain_type_ids["NONPOLYMER"],
                     )
-                    ensemble_chains[ref_chain_map[subchain_id]] = parsed_non_polymer
+                    ensemble_chains[ref_chain_map[subchain_id]] = (
+                        parsed_non_polymer
+                    )
 
         # Ensure ensemble chains are in the same order as reference structure
-        ensemble_chains = [ensemble_chains[idx] for idx in range(len(ensemble_chains))]
+        ensemble_chains = [
+            ensemble_chains[idx] for idx in range(len(ensemble_chains))
+        ]
         all_ensembles.append(ensemble_chains)
 
     # Parse covalent connections
@@ -1071,7 +1082,10 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
         assert len(ensemble_chains) == len(all_ensembles)
         for ensemble_chain in ensemble_chains:
             assert len(ensemble_chain.residues) == res_num
-            assert sum(len(res.atoms) for res in ensemble_chain.residues) == atom_num
+            assert (
+                sum(len(res.atoms) for res in ensemble_chain.residues)
+                == atom_num
+            )
 
         # Find all copies of this chain in the assembly
         entity_id = entity_ids[chain.name]
@@ -1099,7 +1113,8 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
         for i, res in enumerate(chain.residues):
             # Get same residue across models in ensemble
             ensemble_residues = [
-                ensemble_chain.residues[i] for ensemble_chain in ensemble_chains
+                ensemble_chain.residues[i]
+                for ensemble_chain in ensemble_chains
             ]
             assert len(ensemble_residues) == len(all_ensembles)
             for ensemble_res in ensemble_residues:
@@ -1144,7 +1159,8 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
             for a_idx, atom in enumerate(res.atoms):
                 # Get same atom across models in ensemble
                 ensemble_atoms = [
-                    ensemble_res.atoms[a_idx] for ensemble_res in ensemble_residues
+                    ensemble_res.atoms[a_idx]
+                    for ensemble_res in ensemble_residues
                 ]
                 assert len(ensemble_atoms) == len(all_ensembles)
                 for e_idx, ensemble_atom in enumerate(ensemble_atoms):
@@ -1177,8 +1193,12 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
     for conn in connections:
         chain_1_idx = chain_to_idx[conn.chain_1]
         chain_2_idx = chain_to_idx[conn.chain_2]
-        res_1_idx, atom_1_offset = res_to_idx[(conn.chain_1, conn.residue_index_1)]
-        res_2_idx, atom_2_offset = res_to_idx[(conn.chain_2, conn.residue_index_2)]
+        res_1_idx, atom_1_offset = res_to_idx[
+            (conn.chain_1, conn.residue_index_1)
+        ]
+        res_2_idx, atom_2_offset = res_to_idx[
+            (conn.chain_2, conn.residue_index_2)
+        ]
         atom_1_idx = atom_1_offset + conn.atom_index_1
         atom_2_idx = atom_2_offset + conn.atom_index_2
         bond_data.append(

@@ -74,7 +74,9 @@ def load_all_molecules(moldir: str) -> dict[str, Mol]:
     """
     loaded_mols = {}
     files = list(Path(moldir).glob("*.pkl"))
-    for path in tqdm(files, total=len(files), desc="Loading molecules", leave=False):
+    for path in tqdm(
+        files, total=len(files), desc="Loading molecules", leave=False
+    ):
         mol_name = path.stem
         with path.open("rb") as f:
             loaded_mols[mol_name] = pickle.load(f)  # noqa: S301
@@ -110,8 +112,12 @@ def get_symmetries(mols: dict[str, Mol]) -> dict:  # noqa: PLR0912
                 upper_bounds = pickle.loads(
                     bytes.fromhex(mol.GetProp("pb_upper_bounds"))
                 )  # noqa: S301
-                bond_mask = pickle.loads(bytes.fromhex(mol.GetProp("pb_bond_mask")))  # noqa: S301
-                angle_mask = pickle.loads(bytes.fromhex(mol.GetProp("pb_angle_mask")))  # noqa: S301
+                bond_mask = pickle.loads(
+                    bytes.fromhex(mol.GetProp("pb_bond_mask"))
+                )  # noqa: S301
+                angle_mask = pickle.loads(
+                    bytes.fromhex(mol.GetProp("pb_angle_mask"))
+                )  # noqa: S301
             else:
                 edge_index = np.empty((2, 0), dtype=np.int64)
                 lower_bounds = np.array([], dtype=np.float32)
@@ -202,7 +208,10 @@ def compute_symmetry_idx_dictionary(data):
         for j, token in enumerate(chain.tokens):
             token.start_idx = total_count - chain.start_idx
             all_coords.extend(
-                [[atom.coords.x, atom.coords.y, atom.coords.z] for atom in token.atoms]
+                [
+                    [atom.coords.x, atom.coords.y, atom.coords.z]
+                    for atom in token.atoms
+                ]
             )
             total_count += len(token.atoms)
     return all_coords
@@ -245,7 +254,8 @@ def minimum_lddt_symmetry_coords(
     ligand_symmetries = feats["ligand_symmetries"][index_batch]
 
     dmat_predicted = torch.cdist(
-        coords[:, : len(crop_to_all_atom_map)], coords[:, : len(crop_to_all_atom_map)]
+        coords[:, : len(crop_to_all_atom_map)],
+        coords[:, : len(crop_to_all_atom_map)],
     )
 
     # Check best symmetry on chain swap
@@ -257,7 +267,9 @@ def minimum_lddt_symmetry_coords(
         true_all_resolved_mask = all_resolved_mask.clone()
         for start1, end1, start2, end2, chainidx1, chainidx2 in c:
             true_all_coords[:, start1:end1] = all_coords[:, start2:end2]
-            true_all_resolved_mask[start1:end1] = all_resolved_mask[start2:end2]
+            true_all_resolved_mask[start1:end1] = all_resolved_mask[
+                start2:end2
+            ]
         true_coords = true_all_coords[:, crop_to_all_atom_map]
         true_resolved_mask = true_all_resolved_mask[crop_to_all_atom_map]
         dmat_true = torch.cdist(true_coords, true_coords)
@@ -288,7 +300,9 @@ def minimum_lddt_symmetry_coords(
             for i, j in c:
                 indices.add(i)
         indices = sorted(list(indices))
-        indices = torch.from_numpy(np.asarray(indices)).to(true_coords.device).long()
+        indices = (
+            torch.from_numpy(np.asarray(indices)).to(true_coords.device).long()
+        )
         pred_coords_subset = coords[:, : len(crop_to_all_atom_map)][:, indices]
         sub_dmat_pred = torch.cdist(
             coords[:, : len(crop_to_all_atom_map)], pred_coords_subset
@@ -306,7 +320,9 @@ def minimum_lddt_symmetry_coords(
             new_true_coords_subset = new_true_coords[:, indices]
 
             sub_dmat_true = torch.cdist(true_coords, true_coords_subset)
-            sub_dmat_new_true = torch.cdist(new_true_coords, new_true_coords_subset)
+            sub_dmat_new_true = torch.cdist(
+                new_true_coords, new_true_coords_subset
+            )
 
             sub_true_pair_lddt = (
                 true_resolved_mask[:, None] * true_resolved_mask[None, indices]
@@ -317,7 +333,8 @@ def minimum_lddt_symmetry_coords(
             )
 
             sub_new_true_pair_lddt = (
-                new_true_resolved_mask[:, None] * new_true_resolved_mask[None, indices]
+                new_true_resolved_mask[:, None]
+                * new_true_resolved_mask[None, indices]
             )
             sub_new_true_pair_lddt[indices] = (
                 sub_new_true_pair_lddt[indices]
@@ -351,7 +368,9 @@ def minimum_lddt_symmetry_coords(
         true_resolved_mask = best_true_resolved_mask.clone()
 
     # Recomputing alignment
-    true_coords = pad_dim(true_coords, 1, coords.shape[1] - true_coords.shape[1])
+    true_coords = pad_dim(
+        true_coords, 1, coords.shape[1] - true_coords.shape[1]
+    )
     true_resolved_mask = pad_dim(
         true_resolved_mask,
         0,
@@ -415,7 +434,9 @@ def minimum_lddt_symmetry_dist(
                 ]
 
             indices = (
-                torch.from_numpy(np.asarray(indices)).to(disto_target.device).long()
+                torch.from_numpy(np.asarray(indices))
+                .to(disto_target.device)
+                .long()
             )
 
             pred_distogram_subset = pred_distogram[:, indices]
@@ -460,7 +481,10 @@ def compute_all_coords_mask(structure):
         for j, token in enumerate(chain.tokens):
             token.start_idx = total_count - chain.start_idx
             all_coords.extend(
-                [[atom.coords.x, atom.coords.y, atom.coords.z] for atom in token.atoms]
+                [
+                    [atom.coords.x, atom.coords.y, atom.coords.z]
+                    for atom in token.atoms
+                ]
             )
             all_coords_crop_mask.extend(
                 [token.in_crop for _ in range(len(token.atoms))]
@@ -526,9 +550,13 @@ def get_chain_symmetries(cropped, max_n_symmetries=100):
     for token in cropped.tokens:
         chain_idx = chain_asym_id.index(token["asym_id"])
         start = (
-            chain_atom_idx[chain_idx] - original_atom_idx[chain_idx] + token["atom_idx"]
+            chain_atom_idx[chain_idx]
+            - original_atom_idx[chain_idx]
+            + token["atom_idx"]
         )
-        crop_to_all_atom_map.append(np.arange(start, start + token["atom_num"]))
+        crop_to_all_atom_map.append(
+            np.arange(start, start + token["atom_num"])
+        )
     crop_to_all_atom_map = np.concatenate(crop_to_all_atom_map, axis=0)
 
     # Compute the connections edge index for covalent bonds
@@ -542,9 +570,13 @@ def get_chain_symmetries(cropped, max_n_symmetries=100):
             connection["res_1"] == connection["res_2"]
         ):
             continue
-        connections_edge_index.append([connection["atom_1"], connection["atom_2"]])
+        connections_edge_index.append(
+            [connection["atom_1"], connection["atom_2"]]
+        )
     if len(connections_edge_index) > 0:
-        connections_edge_index = np.array(connections_edge_index, dtype=np.int64).T
+        connections_edge_index = np.array(
+            connections_edge_index, dtype=np.int64
+        ).T
         connections_edge_index = all_atom_to_crop_map[connections_edge_index]
     else:
         connections_edge_index = np.empty((2, 0))
@@ -583,7 +615,9 @@ def get_chain_symmetries(cropped, max_n_symmetries=100):
                 )
                 found = True
         if not found:
-            symmetries.append([(i, start, end, chain_in_crop[i], chain["mol_type"])])
+            symmetries.append(
+                [(i, start, end, chain_in_crop[i], chain["mol_type"])]
+            )
 
     combinations = itertools.product(*swaps)
     # to avoid combinatorial explosion, bound the number of combinations even considered
@@ -620,12 +654,15 @@ def get_amino_acids_symmetries(cropped):
     swaps = []
     start_index_crop = 0
     for token in cropped.tokens:
-        symmetries = const.ref_symmetries.get(const.tokens[token["res_type"]], [])
+        symmetries = const.ref_symmetries.get(
+            const.tokens[token["res_type"]], []
+        )
         if len(symmetries) > 0:
             residue_swaps = []
             for sym in symmetries:
                 sym_new_idx = [
-                    (i + start_index_crop, j + start_index_crop) for i, j in sym
+                    (i + start_index_crop, j + start_index_crop)
+                    for i, j in sym
                 ]
                 residue_swaps.append(sym_new_idx)
             swaps.append(residue_swaps)
@@ -663,7 +700,9 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
         added_molecules[mol_id] = token["atom_num"]
 
         # get the molecule type and indices
-        residue_idx = token["res_idx"] + structure.chains[token["asym_id"]]["res_idx"]
+        residue_idx = (
+            token["res_idx"] + structure.chains[token["asym_id"]]["res_idx"]
+        )
         mol_name = structure.residues[residue_idx]["name"]
         atom_idx = structure.residues[residue_idx]["atom_idx"]
         mol_atom_names = structure.atoms[
@@ -671,7 +710,12 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
         ]["name"]
         if mol_name not in const.ref_symmetries:
             index_mols.append(
-                (mol_name, atom_count - token["atom_num"], mol_id, mol_atom_names)
+                (
+                    mol_name,
+                    atom_count - token["atom_num"],
+                    mol_id,
+                    mol_atom_names,
+                )
             )
 
     # for each molecule, get the symmetries
@@ -679,12 +723,20 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
     all_edge_index = []
     all_lower_bounds, all_upper_bounds = [], []
     all_bond_mask, all_angle_mask = [], []
-    all_chiral_atom_index, all_chiral_check_mask, all_chiral_atom_orientations = (
+    (
+        all_chiral_atom_index,
+        all_chiral_check_mask,
+        all_chiral_atom_orientations,
+    ) = (
         [],
         [],
         [],
     )
-    all_stereo_bond_index, all_stereo_check_mask, all_stereo_bond_orientations = (
+    (
+        all_stereo_bond_index,
+        all_stereo_check_mask,
+        all_stereo_bond_orientations,
+    ) = (
         [],
         [],
         [],
@@ -728,7 +780,9 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
             }
             ccd_to_valid_id_array = np.array(
                 [
-                    float("nan") if i not in ccd_to_valid_ids else ccd_to_valid_ids[i]
+                    float("nan")
+                    if i not in ccd_to_valid_ids
+                    else ccd_to_valid_ids[i]
                     for i in range(len(mol_atom_names_ccd))
                 ]
             )
@@ -748,7 +802,9 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
                             bool_add = False
                             break
                 if bool_add:
-                    syms.append([sym_dict[i] for i in range(len(ccd_valid_ids))])
+                    syms.append(
+                        [sym_dict[i] for i in range(len(ccd_valid_ids))]
+                    )
             for sym in syms:
                 if len(sym) != added_molecules[mol_id]:
                     raise Exception(
@@ -768,12 +824,13 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
                 molecule_symmetries.append(swaps)
 
             if return_physical_metrics:
-                edge_index, (lower_bounds, upper_bounds, bond_mask, angle_mask) = (
-                    slice_valid_index(
-                        edge_index,
-                        ccd_to_valid_id_array,
-                        (lower_bounds, upper_bounds, bond_mask, angle_mask),
-                    )
+                (
+                    edge_index,
+                    (lower_bounds, upper_bounds, bond_mask, angle_mask),
+                ) = slice_valid_index(
+                    edge_index,
+                    ccd_to_valid_id_array,
+                    (lower_bounds, upper_bounds, bond_mask, angle_mask),
                 )
                 all_edge_index.append(edge_index + start_mol)
                 all_lower_bounds.append(lower_bounds)
@@ -781,23 +838,25 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
                 all_bond_mask.append(bond_mask)
                 all_angle_mask.append(angle_mask)
 
-                chiral_atom_index, (chiral_check_mask, chiral_atom_orientations) = (
-                    slice_valid_index(
-                        chiral_atom_index,
-                        ccd_to_valid_id_array,
-                        (chiral_check_mask, chiral_atom_orientations),
-                    )
+                (
+                    chiral_atom_index,
+                    (chiral_check_mask, chiral_atom_orientations),
+                ) = slice_valid_index(
+                    chiral_atom_index,
+                    ccd_to_valid_id_array,
+                    (chiral_check_mask, chiral_atom_orientations),
                 )
                 all_chiral_atom_index.append(chiral_atom_index + start_mol)
                 all_chiral_check_mask.append(chiral_check_mask)
                 all_chiral_atom_orientations.append(chiral_atom_orientations)
 
-                stereo_bond_index, (stereo_check_mask, stereo_bond_orientations) = (
-                    slice_valid_index(
-                        stereo_bond_index,
-                        ccd_to_valid_id_array,
-                        (stereo_check_mask, stereo_bond_orientations),
-                    )
+                (
+                    stereo_bond_index,
+                    (stereo_check_mask, stereo_bond_orientations),
+                ) = slice_valid_index(
+                    stereo_bond_index,
+                    ccd_to_valid_id_array,
+                    (stereo_check_mask, stereo_bond_orientations),
                 )
                 all_stereo_bond_index.append(stereo_bond_index + start_mol)
                 all_stereo_check_mask.append(stereo_check_mask)
@@ -812,8 +871,12 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
                 planar_double_bond_index = slice_valid_index(
                     planar_double_bond_index, ccd_to_valid_id_array
                 )
-                all_aromatic_5_ring_index.append(aromatic_5_ring_index + start_mol)
-                all_aromatic_6_ring_index.append(aromatic_6_ring_index + start_mol)
+                all_aromatic_5_ring_index.append(
+                    aromatic_5_ring_index + start_mol
+                )
+                all_aromatic_6_ring_index.append(
+                    aromatic_6_ring_index + start_mol
+                )
                 all_planar_double_bond_index.append(
                     planar_double_bond_index + start_mol
                 )
@@ -826,14 +889,22 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
             all_bond_mask = np.concatenate(all_bond_mask, axis=0)
             all_angle_mask = np.concatenate(all_angle_mask, axis=0)
 
-            all_chiral_atom_index = np.concatenate(all_chiral_atom_index, axis=1)
-            all_chiral_check_mask = np.concatenate(all_chiral_check_mask, axis=0)
+            all_chiral_atom_index = np.concatenate(
+                all_chiral_atom_index, axis=1
+            )
+            all_chiral_check_mask = np.concatenate(
+                all_chiral_check_mask, axis=0
+            )
             all_chiral_atom_orientations = np.concatenate(
                 all_chiral_atom_orientations, axis=0
             )
 
-            all_stereo_bond_index = np.concatenate(all_stereo_bond_index, axis=1)
-            all_stereo_check_mask = np.concatenate(all_stereo_check_mask, axis=0)
+            all_stereo_bond_index = np.concatenate(
+                all_stereo_bond_index, axis=1
+            )
+            all_stereo_check_mask = np.concatenate(
+                all_stereo_check_mask, axis=0
+            )
             all_stereo_bond_orientations = np.concatenate(
                 all_stereo_bond_orientations, axis=0
             )
@@ -873,12 +944,16 @@ def get_ligand_symmetries(cropped, symmetries, return_physical_metrics=False):
             "ligand_edge_upper_bounds": torch.tensor(all_upper_bounds),
             "ligand_edge_bond_mask": torch.tensor(all_bond_mask),
             "ligand_edge_angle_mask": torch.tensor(all_angle_mask),
-            "ligand_chiral_atom_index": torch.tensor(all_chiral_atom_index).long(),
+            "ligand_chiral_atom_index": torch.tensor(
+                all_chiral_atom_index
+            ).long(),
             "ligand_chiral_check_mask": torch.tensor(all_chiral_check_mask),
             "ligand_chiral_atom_orientations": torch.tensor(
                 all_chiral_atom_orientations
             ),
-            "ligand_stereo_bond_index": torch.tensor(all_stereo_bond_index).long(),
+            "ligand_stereo_bond_index": torch.tensor(
+                all_stereo_bond_index
+            ).long(),
             "ligand_stereo_check_mask": torch.tensor(all_stereo_check_mask),
             "ligand_stereo_bond_orientations": torch.tensor(
                 all_stereo_bond_orientations

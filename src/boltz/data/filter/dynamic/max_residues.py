@@ -34,4 +34,7 @@ class MaxResiduesFilter(DynamicFilter):
 
         """
         num_residues = sum(chain.num_residues for chain in record.chains)
-        return num_residues <= self.max_residues and num_residues >= self.min_residues
+        return (
+            num_residues <= self.max_residues
+            and num_residues >= self.min_residues
+        )

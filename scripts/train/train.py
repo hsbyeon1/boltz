@@ -135,9 +135,9 @@ def train(raw_config: str, args: list[str]) -> None:  # noqa: C901, PLR0912, PLR
             # Modify parameter names in the state_dict
             new_state_dict = {}
             for key, value in checkpoint["state_dict"].items():
-                if not key.startswith("structure_module") and not key.startswith(
-                    "distogram_module"
-                ):
+                if not key.startswith(
+                    "structure_module"
+                ) and not key.startswith("distogram_module"):
                     new_key = "confidence_module." + key
                     new_state_dict[new_key] = value
             new_state_dict.update(checkpoint["state_dict"])
@@ -149,7 +149,9 @@ def train(raw_config: str, args: list[str]) -> None:  # noqa: C901, PLR0912, PLR
             random_string = "".join(
                 random.choices(string.ascii_lowercase + string.digits, k=10)
             )
-            file_path = os.path.dirname(cfg.pretrained) + "/" + random_string + ".ckpt"
+            file_path = (
+                os.path.dirname(cfg.pretrained) + "/" + random_string + ".ckpt"
+            )
             print(
                 f"Saving modified checkpoint to {file_path} created by broadcasting trunk of {cfg.pretrained} to confidence module."
             )
@@ -159,7 +161,10 @@ def train(raw_config: str, args: list[str]) -> None:  # noqa: C901, PLR0912, PLR
 
         print(f"Loading model from {file_path}")
         model_module = type(model_module).load_from_checkpoint(
-            file_path, map_location="cpu", strict=False, **(model_module.hparams)
+            file_path,
+            map_location="cpu",
+            strict=False,
+            **(model_module.hparams),
         )
 
         if cfg.load_confidence_from_trunk:
@@ -206,7 +211,9 @@ def train(raw_config: str, args: list[str]) -> None:  # noqa: C901, PLR0912, PLR
     if (isinstance(devices, int) and devices > 1) or (
         isinstance(devices, (list, listconfig.ListConfig)) and len(devices) > 1
     ):
-        strategy = DDPStrategy(find_unused_parameters=cfg.find_unused_parameters)
+        strategy = DDPStrategy(
+            find_unused_parameters=cfg.find_unused_parameters
+        )
 
     trainer = pl.Trainer(
         default_root_dir=str(dirpath),

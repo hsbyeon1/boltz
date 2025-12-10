@@ -264,7 +264,9 @@ class Structure(NumpySerializable):
                 start = res["atom_idx"]
                 end = res["atom_idx"] + res["atom_num"]
                 atoms.append(self.atoms[start:end])
-                atom_map.update({k: atom_idx + k - start for k in range(start, end)})
+                atom_map.update(
+                    {k: atom_idx + k - start for k in range(start, end)}
+                )
                 atom_idx += res["atom_num"]
 
         # Concatenate the tables
@@ -394,7 +396,9 @@ class StructureV2(NumpySerializable):
                 start = res["atom_idx"]
                 end = res["atom_idx"] + res["atom_num"]
                 atoms.append(self.atoms[start:end])
-                atom_map.update({k: atom_idx + k - start for k in range(start, end)})
+                atom_map.update(
+                    {k: atom_idx + k - start for k in range(start, end)}
+                )
                 atom_idx += res["atom_num"]
 
         # Concatenate the tables

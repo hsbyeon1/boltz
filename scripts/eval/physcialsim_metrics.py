@@ -36,25 +36,37 @@ def compute_torsion_angles(coords, torsion_index):
 
 
 def check_ligand_distance_geometry(
-    structure, constraints, bond_buffer=0.25, angle_buffer=0.25, clash_buffer=0.2
+    structure,
+    constraints,
+    bond_buffer=0.25,
+    angle_buffer=0.25,
+    clash_buffer=0.2,
 ):
     coords = structure.coords["coords"]
     rdkit_bounds_constraints = constraints.rdkit_bounds_constraints
-    pair_index = rdkit_bounds_constraints["atom_idxs"].copy().astype(np.int64).T
+    pair_index = (
+        rdkit_bounds_constraints["atom_idxs"].copy().astype(np.int64).T
+    )
     bond_mask = rdkit_bounds_constraints["is_bond"].copy().astype(bool)
     angle_mask = rdkit_bounds_constraints["is_angle"].copy().astype(bool)
-    upper_bounds = rdkit_bounds_constraints["upper_bound"].copy().astype(np.float32)
-    lower_bounds = rdkit_bounds_constraints["lower_bound"].copy().astype(np.float32)
-    dists = np.linalg.norm(coords[pair_index[0]] - coords[pair_index[1]], axis=-1)
+    upper_bounds = (
+        rdkit_bounds_constraints["upper_bound"].copy().astype(np.float32)
+    )
+    lower_bounds = (
+        rdkit_bounds_constraints["lower_bound"].copy().astype(np.float32)
+    )
+    dists = np.linalg.norm(
+        coords[pair_index[0]] - coords[pair_index[1]], axis=-1
+    )
     bond_length_violations = (
         dists[bond_mask] <= lower_bounds[bond_mask] * (1.0 - bond_buffer)
     ) + (dists[bond_mask] >= upper_bounds[bond_mask] * (1.0 + bond_buffer))
     bond_angle_violations = (
         dists[angle_mask] <= lower_bounds[angle_mask] * (1.0 - angle_buffer)
     ) + (dists[angle_mask] >= upper_bounds[angle_mask] * (1.0 + angle_buffer))
-    internal_clash_violations = dists[~bond_mask * ~angle_mask] <= lower_bounds[
+    internal_clash_violations = dists[
         ~bond_mask * ~angle_mask
-    ] * (1.0 - clash_buffer)
+    ] <= lower_bounds[~bond_mask * ~angle_mask] * (1.0 - clash_buffer)
     num_ligands = sum(
         [
             int(const.chain_types[chain["mol_type"]] == "NONPOLYMER")
@@ -81,7 +93,9 @@ def check_ligand_stereochemistry(structure, constraints):
     true_chiral_atom_orientations = chiral_atom_constraints["is_r"]
     chiral_atom_ref_mask = chiral_atom_constraints["is_reference"]
     chiral_atom_index = chiral_atom_index[:, chiral_atom_ref_mask]
-    true_chiral_atom_orientations = true_chiral_atom_orientations[chiral_atom_ref_mask]
+    true_chiral_atom_orientations = true_chiral_atom_orientations[
+        chiral_atom_ref_mask
+    ]
     pred_chiral_atom_orientations = (
         compute_torsion_angles(coords, chiral_atom_index) > 0
     )
@@ -93,7 +107,9 @@ def check_ligand_stereochemistry(structure, constraints):
     true_stereo_bond_orientations = stereo_bond_constraints["is_e"]
     stereo_bond_ref_mask = stereo_bond_constraints["is_reference"]
     stereo_bond_index = stereo_bond_index[:, stereo_bond_ref_mask]
-    true_stereo_bond_orientations = true_stereo_bond_orientations[stereo_bond_ref_mask]
+    true_stereo_bond_orientations = true_stereo_bond_orientations[
+        stereo_bond_ref_mask
+    ]
     pred_stereo_bond_orientations = (
         np.abs(compute_torsion_angles(coords, stereo_bond_index)) > np.pi / 2
     )
@@ -114,21 +130,31 @@ def check_ligand_flatness(structure, constraints, buffer=0.25):
 
     planar_ring_5_index = constraints.planar_ring_5_constraints["atom_idxs"]
     ring_5_coords = coords[planar_ring_5_index, :]
-    centered_ring_5_coords = ring_5_coords - ring_5_coords.mean(axis=-2, keepdims=True)
+    centered_ring_5_coords = ring_5_coords - ring_5_coords.mean(
+        axis=-2, keepdims=True
+    )
     ring_5_vecs = np.linalg.svd(centered_ring_5_coords)[2][..., -1, :, None]
-    ring_5_dists = np.abs((centered_ring_5_coords @ ring_5_vecs).squeeze(axis=-1))
+    ring_5_dists = np.abs(
+        (centered_ring_5_coords @ ring_5_vecs).squeeze(axis=-1)
+    )
     ring_5_violations = np.all(ring_5_dists <= buffer, axis=-1)
 
     planar_ring_6_index = constraints.planar_ring_6_constraints["atom_idxs"]
     ring_6_coords = coords[planar_ring_6_index, :]
-    centered_ring_6_coords = ring_6_coords - ring_6_coords.mean(axis=-2, keepdims=True)
+    centered_ring_6_coords = ring_6_coords - ring_6_coords.mean(
+        axis=-2, keepdims=True
+    )
     ring_6_vecs = np.linalg.svd(centered_ring_6_coords)[2][..., -1, :, None]
-    ring_6_dists = np.abs((centered_ring_6_coords @ ring_6_vecs)).squeeze(axis=-1)
+    ring_6_dists = np.abs((centered_ring_6_coords @ ring_6_vecs)).squeeze(
+        axis=-1
+    )
     ring_6_violations = np.any(ring_6_dists >= buffer, axis=-1)
 
     planar_bond_index = constraints.planar_bond_constraints["atom_idxs"]
     bond_coords = coords[planar_bond_index, :]
-    centered_bond_coords = bond_coords - bond_coords.mean(axis=-2, keepdims=True)
+    centered_bond_coords = bond_coords - bond_coords.mean(
+        axis=-2, keepdims=True
+    )
     bond_vecs = np.linalg.svd(centered_bond_coords)[2][..., -1, :, None]
     bond_dists = np.abs((centered_bond_coords @ bond_vecs)).squeeze(axis=-1)
     bond_violations = np.any(bond_dists >= buffer, axis=-1)
@@ -159,7 +185,9 @@ def check_steric_clash(structure, molecules, buffer=0.25):
     connected_chains = set()
     for bond in structure.bonds:
         if bond["chain_1"] != bond["chain_2"]:
-            connected_chains.add(tuple(sorted((bond["chain_1"], bond["chain_2"]))))
+            connected_chains.add(
+                tuple(sorted((bond["chain_1"], bond["chain_2"])))
+            )
 
     vdw_radii = []
     for res in structure.residues:
@@ -190,7 +218,9 @@ def check_steric_clash(structure, molecules, buffer=0.25):
             coords_j = structure.coords["coords"][
                 chain_j["atom_idx"] : chain_j["atom_idx"] + chain_j["atom_num"]
             ]
-            dists = np.linalg.norm(coords_i[:, None, :] - coords_j[None, :, :], axis=-1)
+            dists = np.linalg.norm(
+                coords_i[:, None, :] - coords_j[None, :, :], axis=-1
+            )
             radii_i = vdw_radii[
                 chain_i["atom_idx"] : chain_i["atom_idx"] + chain_i["atom_num"]
             ]
@@ -254,7 +284,12 @@ def process_fn(key):
     elif tool == "chai":
         cif_path = chai_dir / pdb_id / f"pred.model_idx_{model_idx}.cif"
     elif tool == "af3":
-        cif_path = af3_dir / pdb_id.lower() / f"seed-1_sample-{model_idx}" / "model.cif"
+        cif_path = (
+            af3_dir
+            / pdb_id.lower()
+            / f"seed-1_sample-{model_idx}"
+            / "model.cif"
+        )
 
     parsed_structure = parse_mmcif(
         cif_path,
@@ -294,7 +329,9 @@ df = pd.DataFrame.from_records(records)
 df["num_chain_clashes_all"] = df[
     [key for key in df.columns if "chain_clash" in key]
 ].sum(axis=1)
-df["num_pairs_all"] = df[[key for key in df.columns if "chain_pair" in key]].sum(axis=1)
+df["num_pairs_all"] = df[
+    [key for key in df.columns if "chain_pair" in key]
+].sum(axis=1)
 df["clash_free"] = df["num_chain_clashes_all"] == 0
 df["valid_ligand"] = (
     df[[key for key in df.columns if "violation" in key]].sum(axis=1) == 0

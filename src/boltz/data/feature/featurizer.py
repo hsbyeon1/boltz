@@ -68,7 +68,8 @@ def compute_frames_nonpolymer(
         num_tokens = mask_chain_token.sum()
         num_atoms = mask_chain_atom.sum()
         if (
-            data.tokens[token_idx]["mol_type"] != const.chain_type_ids["NONPOLYMER"]
+            data.tokens[token_idx]["mol_type"]
+            != const.chain_type_ids["NONPOLYMER"]
             or num_atoms < 3
         ):
             token_idx += num_tokens
@@ -307,8 +308,9 @@ def construct_paired_msa(  # noqa: C901, PLR0915, PLR0912
     # Map (chain_id, seq_idx, res_idx) to deletion
     deletions = numba.typed.Dict.empty(
         key_type=numba.types.Tuple(
-            [numba.types.int64, numba.types.int64, numba.types.int64]),
-        value_type=numba.types.int64
+            [numba.types.int64, numba.types.int64, numba.types.int64]
+        ),
+        value_type=numba.types.int64,
     )
     for chain_id, chain_msa in msa.items():
         chain_deletions = chain_msa.deletions
@@ -340,10 +342,16 @@ def prepare_msa_arrays(
     is_paired: list[dict[int, int]],
     deletions: dict[tuple[int, int, int], int],
     msa: dict[int, MSA],
-) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> tuple[
+    npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]
+]:
     """Reshape data to play nicely with numba jit."""
-    token_asym_ids_arr = np.array([t["asym_id"] for t in tokens], dtype=np.int64)
-    token_res_idxs_arr = np.array([t["res_idx"] for t in tokens], dtype=np.int64)
+    token_asym_ids_arr = np.array(
+        [t["asym_id"] for t in tokens], dtype=np.int64
+    )
+    token_res_idxs_arr = np.array(
+        [t["res_idx"] for t in tokens], dtype=np.int64
+    )
 
     chain_ids = sorted(msa.keys())
 
@@ -351,7 +359,8 @@ def prepare_msa_arrays(
     # This allows us to look up a chain_id by it's index in the chain_ids list.
     chain_id_to_idx = {chain_id: i for i, chain_id in enumerate(chain_ids)}
     token_asym_ids_idx_arr = np.array(
-        [chain_id_to_idx[asym_id] for asym_id in token_asym_ids_arr], dtype=np.int64
+        [chain_id_to_idx[asym_id] for asym_id in token_asym_ids_arr],
+        dtype=np.int64,
     )
 
     pairing_arr = np.zeros((len(pairing), len(chain_ids)), dtype=np.int64)
@@ -363,7 +372,9 @@ def prepare_msa_arrays(
 
     for i, row_is_paired in enumerate(is_paired):
         for chain_id in chain_ids:
-            is_paired_arr[i, chain_id_to_idx[chain_id]] = row_is_paired[chain_id]
+            is_paired_arr[i, chain_id_to_idx[chain_id]] = row_is_paired[
+                chain_id
+            ]
 
     max_seq_len = max(len(msa[chain_id].sequences) for chain_id in chain_ids)
 
@@ -373,8 +384,12 @@ def prepare_msa_arrays(
         for i, seq in enumerate(msa[chain_id].sequences):
             msa_sequences[chain_id_to_idx[chain_id], i] = seq["res_start"]
 
-    max_residues_len = max(len(msa[chain_id].residues) for chain_id in chain_ids)
-    msa_residues = np.full((len(chain_ids), max_residues_len), -1, dtype=np.int64)
+    max_residues_len = max(
+        len(msa[chain_id].residues) for chain_id in chain_ids
+    )
+    msa_residues = np.full(
+        (len(chain_ids), max_residues_len), -1, dtype=np.int64
+    )
     for chain_id in chain_ids:
         residues = msa[chain_id].residues.astype(np.int64)
         idxs = np.arange(len(residues))
@@ -394,7 +409,9 @@ def prepare_msa_arrays(
     )
 
 
-deletions_dict_type = types.DictType(types.UniTuple(types.int64, 3), types.int64)
+deletions_dict_type = types.DictType(
+    types.UniTuple(types.int64, 3), types.int64
+)
 
 
 @numba.njit(
@@ -429,7 +446,9 @@ def _prepare_msa_arrays_inner(
     msa_sequences: npt.NDArray[np.int64],
     msa_residues: npt.NDArray[np.int64],
     gap_token: int,
-) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> tuple[
+    npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]
+]:
     n_tokens = len(token_asym_ids)
     n_pairs = len(pairing)
     msa_data = np.full((n_tokens, n_pairs), gap_token, dtype=np.int64)
@@ -444,7 +463,9 @@ def _prepare_msa_arrays_inner(
 
         for pair_idx in range(n_pairs):
             seq_idx = pairing[pair_idx, chain_id_idx]
-            paired_data[token_idx, pair_idx] = is_paired[pair_idx, chain_id_idx]
+            paired_data[token_idx, pair_idx] = is_paired[
+                pair_idx, chain_id_idx
+            ]
 
             # Add residue type
             if seq_idx != -1:
@@ -580,7 +601,8 @@ def process_token_features(
                 if token["asym_id"] == pocket_asym_id:
                     binder_coords.append(
                         data.structure.atoms["coords"][
-                            token["atom_idx"] : token["atom_idx"] + token["atom_num"]
+                            token["atom_idx"] : token["atom_idx"]
+                            + token["atom_num"]
                         ]
                     )
             binder_coords = np.concatenate(binder_coords, axis=0)
@@ -594,7 +616,8 @@ def process_token_features(
                     and token["resolved_mask"] == 1
                 ):
                     token_coords = data.structure.atoms["coords"][
-                        token["atom_idx"] : token["atom_idx"] + token["atom_num"]
+                        token["atom_idx"] : token["atom_idx"]
+                        + token["atom_num"]
                     ]
 
                     # find chain and apply chain transformation
@@ -604,7 +627,8 @@ def process_token_features(
 
                     token_dist[i] = np.min(
                         np.linalg.norm(
-                            token_coords[:, None, :] - binder_coords[None, :, :],
+                            token_coords[:, None, :]
+                            - binder_coords[None, :, :],
                             axis=-1,
                         )
                     )
@@ -613,9 +637,12 @@ def process_token_features(
 
             if np.sum(pocket_mask) > 0:
                 pocket_feature = (
-                    np.zeros(len(token_data)) + const.pocket_contact_info["UNSELECTED"]
+                    np.zeros(len(token_data))
+                    + const.pocket_contact_info["UNSELECTED"]
                 )
-                pocket_feature[binder_mask] = const.pocket_contact_info["BINDER"]
+                pocket_feature[binder_mask] = const.pocket_contact_info[
+                    "BINDER"
+                ]
 
                 if binder_pocket_sampling_geometric_p > 0.0:
                     # select a subset of the pocket, according
@@ -624,9 +651,13 @@ def process_token_features(
                         pocket_mask, binder_pocket_sampling_geometric_p
                     )
 
-                pocket_feature[pocket_mask] = const.pocket_contact_info["POCKET"]
+                pocket_feature[pocket_mask] = const.pocket_contact_info[
+                    "POCKET"
+                ]
     pocket_feature = from_numpy(pocket_feature).long()
-    pocket_feature = one_hot(pocket_feature, num_classes=len(const.pocket_contact_info))
+    pocket_feature = one_hot(
+        pocket_feature, num_classes=len(const.pocket_contact_info)
+    )
 
     # Pad to max tokens if given
     if max_tokens is not None:
@@ -770,7 +801,11 @@ def process_atom_features(
             idx_frame_a, idx_frame_b, idx_frame_c = 0, 0, 0
             mask_frame = False
         frame_data.append(
-            [idx_frame_a + atom_idx, idx_frame_b + atom_idx, idx_frame_c + atom_idx]
+            [
+                idx_frame_a + atom_idx,
+                idx_frame_b + atom_idx,
+                idx_frame_c + atom_idx,
+            ]
         )
         resolved_frame_data.append(mask_frame)
 
@@ -781,7 +816,9 @@ def process_atom_features(
         # Update atom data. This is technically never used again (we rely on coord_data),
         # but we update for consistency and to make sure the Atom object has valid, transformed coordinates.
         token_atoms = token_atoms.copy()
-        token_atoms["coords"] = token_coords[0]  # atom has a copy of first coords
+        token_atoms["coords"] = token_coords[
+            0
+        ]  # atom has a copy of first coords
         atom_data.append(token_atoms)
         atom_idx += len(token_atoms)
 
@@ -869,7 +906,9 @@ def process_atom_features(
             atom_to_token = pad_dim(atom_to_token, 1, pad_len)
             token_to_rep_atom = pad_dim(token_to_rep_atom, 0, pad_len)
             r_set_to_rep_atom = pad_dim(r_set_to_rep_atom, 0, pad_len)
-            disto_target = pad_dim(pad_dim(disto_target, 0, pad_len), 1, pad_len)
+            disto_target = pad_dim(
+                pad_dim(disto_target, 0, pad_len), 1, pad_len
+            )
             frames = pad_dim(frames, 0, pad_len)
             frame_resolved_mask = pad_dim(frame_resolved_mask, 0, pad_len)
 
@@ -998,8 +1037,12 @@ def process_residue_constraint_features(
         chiral_atom_constraints = residue_constraints.chiral_atom_constraints
         stereo_bond_constraints = residue_constraints.stereo_bond_constraints
         planar_bond_constraints = residue_constraints.planar_bond_constraints
-        planar_ring_5_constraints = residue_constraints.planar_ring_5_constraints
-        planar_ring_6_constraints = residue_constraints.planar_ring_6_constraints
+        planar_ring_5_constraints = (
+            residue_constraints.planar_ring_5_constraints
+        )
+        planar_ring_6_constraints = (
+            residue_constraints.planar_ring_6_constraints
+        )
 
         rdkit_bounds_index = torch.tensor(
             rdkit_bounds_constraints["atom_idxs"].copy(), dtype=torch.long
@@ -1093,10 +1136,18 @@ def process_chain_feature_constraints(
     if structure.connections.shape[0] > 0:
         connected_chain_index, connected_atom_index = [], []
         for connection in structure.connections:
-            connected_chain_index.append([connection["chain_1"], connection["chain_2"]])
-            connected_atom_index.append([connection["atom_1"], connection["atom_2"]])
-        connected_chain_index = torch.tensor(connected_chain_index, dtype=torch.long).T
-        connected_atom_index = torch.tensor(connected_atom_index, dtype=torch.long).T
+            connected_chain_index.append(
+                [connection["chain_1"], connection["chain_2"]]
+            )
+            connected_atom_index.append(
+                [connection["atom_1"], connection["atom_2"]]
+            )
+        connected_chain_index = torch.tensor(
+            connected_chain_index, dtype=torch.long
+        ).T
+        connected_atom_index = torch.tensor(
+            connected_atom_index, dtype=torch.long
+        ).T
     else:
         connected_chain_index = torch.empty((2, 0), dtype=torch.long)
         connected_atom_index = torch.empty((2, 0), dtype=torch.long)
@@ -1109,7 +1160,9 @@ def process_chain_feature_constraints(
             if chain_i["entity_id"] == chain_j["entity_id"]:
                 symmetric_chain_index.append([i, j])
     if len(symmetric_chain_index) > 0:
-        symmetric_chain_index = torch.tensor(symmetric_chain_index, dtype=torch.long).T
+        symmetric_chain_index = torch.tensor(
+            symmetric_chain_index, dtype=torch.long
+        ).T
     else:
         symmetric_chain_index = torch.empty((2, 0), dtype=torch.long)
     return {
@@ -1212,7 +1265,9 @@ class BoltzFeaturizer:
         residue_constraint_features = {}
         chain_constraint_features = {}
         if compute_constraint_features:
-            residue_constraint_features = process_residue_constraint_features(data)
+            residue_constraint_features = process_residue_constraint_features(
+                data
+            )
             chain_constraint_features = process_chain_feature_constraints(data)
 
         return {

@@ -193,11 +193,15 @@ def _get_minimal_slice_set(
     # If both start and end are at the edges of the subtree rooted at
     # divergence_idx, we can just select the whole subtree at once
     if start_edges[divergence_idx] and end_edges[divergence_idx]:
-        slices.append(path + (slice(start[divergence_idx], end[divergence_idx] + 1),))
+        slices.append(
+            path + (slice(start[divergence_idx], end[divergence_idx] + 1),)
+        )
     # If just start is at the edge, we can grab almost all of the subtree,
     # treating only the ragged bottom edge as an edge case
     elif start_edges[divergence_idx]:
-        slices.append(path + (slice(start[divergence_idx], end[divergence_idx]),))
+        slices.append(
+            path + (slice(start[divergence_idx], end[divergence_idx]),)
+        )
         slices.extend(lower())
     # Analogous to the previous case, but the top is ragged this time
     elif end_edges[divergence_idx]:
@@ -252,7 +256,9 @@ def _chunk_slice(
 
     sliced_tensors = [t[s] for s in slices]
 
-    return torch.cat([s.view((-1,) + t.shape[no_batch_dims:]) for s in sliced_tensors])
+    return torch.cat(
+        [s.view((-1,) + t.shape[no_batch_dims:]) for s in sliced_tensors]
+    )
 
 
 def chunk_layer(
@@ -317,14 +323,18 @@ def chunk_layer(
     for d in orig_batch_dims:
         flat_batch_dim *= d
 
-    no_chunks = flat_batch_dim // chunk_size + (flat_batch_dim % chunk_size != 0)
+    no_chunks = flat_batch_dim // chunk_size + (
+        flat_batch_dim % chunk_size != 0
+    )
 
     i = 0
     out = prepped_outputs
     for _ in range(no_chunks):
         # Chunk the input
         if not low_mem:
-            select_chunk = lambda t: t[i : i + chunk_size] if t.shape[0] != 1 else t
+            select_chunk = (
+                lambda t: t[i : i + chunk_size] if t.shape[0] != 1 else t
+            )
         else:
             select_chunk = partial(
                 _chunk_slice,

@@ -63,7 +63,9 @@ class AffinityModule(nn.Module):
             num_transitions=2,
         )
 
-        self.pairformer_stack = PairformerNoSeqModule(token_z, **pairformer_args)
+        self.pairformer_stack = PairformerNoSeqModule(
+            token_z, **pairformer_args
+        )
         self.affinity_heads = AffinityHeadsTransformer(
             token_z,
             transformer_args["token_s"],
@@ -93,7 +95,9 @@ class AffinityModule(nn.Module):
         )
 
         token_to_rep_atom = feats["token_to_rep_atom"]
-        token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0)
+        token_to_rep_atom = token_to_rep_atom.repeat_interleave(
+            multiplicity, 0
+        )
         if len(x_pred.shape) == 4:
             B, mult, N, _ = x_pred.shape
             x_pred = x_pred.reshape(B * mult, N, -1)
@@ -107,9 +111,13 @@ class AffinityModule(nn.Module):
         distogram = (d.unsqueeze(-1) > self.boundaries).sum(dim=-1).long()
         distogram = self.dist_bin_pairwise_embed(distogram)
 
-        z = z + self.pairwise_conditioner(z_trunk=z, token_rel_pos_feats=distogram)
+        z = z + self.pairwise_conditioner(
+            z_trunk=z, token_rel_pos_feats=distogram
+        )
 
-        pad_token_mask = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
+        pad_token_mask = feats["token_pad_mask"].repeat_interleave(
+            multiplicity, 0
+        )
         rec_mask = (feats["mol_type"] == 0).repeat_interleave(multiplicity, 0)
         rec_mask = rec_mask * pad_token_mask
         lig_mask = (
@@ -182,10 +190,14 @@ class AffinityHeadsTransformer(nn.Module):
         multiplicity=1,
     ):
         pad_token_mask = (
-            feats["token_pad_mask"].repeat_interleave(multiplicity, 0).unsqueeze(-1)
+            feats["token_pad_mask"]
+            .repeat_interleave(multiplicity, 0)
+            .unsqueeze(-1)
         )
         rec_mask = (
-            (feats["mol_type"] == 0).repeat_interleave(multiplicity, 0).unsqueeze(-1)
+            (feats["mol_type"] == 0)
+            .repeat_interleave(multiplicity, 0)
+            .unsqueeze(-1)
         )
         rec_mask = rec_mask * pad_token_mask
         lig_mask = (

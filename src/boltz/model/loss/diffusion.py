@@ -35,12 +35,12 @@ def weighted_rigid_align(
     weights = (mask * weights).unsqueeze(-1)
 
     # Compute weighted centroids
-    true_centroid = (true_coords * weights).sum(dim=1, keepdim=True) / weights.sum(
+    true_centroid = (true_coords * weights).sum(
         dim=1, keepdim=True
-    )
-    pred_centroid = (pred_coords * weights).sum(dim=1, keepdim=True) / weights.sum(
+    ) / weights.sum(dim=1, keepdim=True)
+    pred_centroid = (pred_coords * weights).sum(
         dim=1, keepdim=True
-    )
+    ) / weights.sum(dim=1, keepdim=True)
 
     # Center the coordinates
     true_coords_centered = true_coords - true_centroid
@@ -54,7 +54,9 @@ def weighted_rigid_align(
 
     # Compute the weighted covariance matrix
     cov_matrix = einsum(
-        weights * pred_coords_centered, true_coords_centered, "b n i, b n j -> b i j"
+        weights * pred_coords_centered,
+        true_coords_centered,
+        "b n i, b n j -> b i j",
     )
 
     # Compute the SVD of the covariance matrix, required float32 for svd and determinant
@@ -74,7 +76,9 @@ def weighted_rigid_align(
         )
 
     # Compute the rotation matrix
-    rot_matrix = torch.einsum("b i j, b k j -> b i k", U, V).to(dtype=torch.float32)
+    rot_matrix = torch.einsum("b i j, b k j -> b i k", U, V).to(
+        dtype=torch.float32
+    )
 
     # Ensure proper rotation matrix with determinant 1
     F = torch.eye(dim, dtype=cov_matrix_32.dtype, device=cov_matrix.device)[
@@ -140,7 +144,9 @@ def smooth_lddt_loss(
         is_nucleotide_pair * (true_dists < nucleic_acid_cutoff).float()
         + (1 - is_nucleotide_pair) * (true_dists < other_cutoff).float()
     )
-    mask = mask * (1 - torch.eye(pred_coords.shape[1], device=pred_coords.device))
+    mask = mask * (
+        1 - torch.eye(pred_coords.shape[1], device=pred_coords.device)
+    )
     mask = mask * (coords_mask.unsqueeze(-1) * coords_mask.unsqueeze(-2))
 
     # Compute distances between all pairs of atoms

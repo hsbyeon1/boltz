@@ -36,9 +36,9 @@ class ContactConditioning(nn.Module):
         assert const.contact_conditioning_info["UNSELECTED"] == 1
         contact_conditioning = feats["contact_conditioning"][:, :, :, 2:]
         contact_threshold = feats["contact_threshold"]
-        contact_threshold_normalized = (contact_threshold - self.cutoff_min) / (
-            self.cutoff_max - self.cutoff_min
-        )
+        contact_threshold_normalized = (
+            contact_threshold - self.cutoff_min
+        ) / (self.cutoff_max - self.cutoff_min)
         contact_threshold_fourier = self.fourier_embedding(
             contact_threshold_normalized.flatten()
         ).reshape(contact_threshold_normalized.shape + (-1,))
@@ -57,10 +57,14 @@ class ContactConditioning(nn.Module):
             contact_conditioning
             * (
                 1
-                - feats["contact_conditioning"][:, :, :, 0:2].sum(dim=-1, keepdim=True)
+                - feats["contact_conditioning"][:, :, :, 0:2].sum(
+                    dim=-1, keepdim=True
+                )
             )
-            + self.encoding_unspecified * feats["contact_conditioning"][:, :, :, 0:1]
-            + self.encoding_unselected * feats["contact_conditioning"][:, :, :, 1:2]
+            + self.encoding_unspecified
+            * feats["contact_conditioning"][:, :, :, 0:1]
+            + self.encoding_unselected
+            * feats["contact_conditioning"][:, :, :, 1:2]
         )
         return contact_conditioning
 
@@ -121,7 +125,9 @@ class InputEmbedder(nn.Module):
 
         self.atom_enc_proj_z = nn.Sequential(
             nn.LayerNorm(atom_z),
-            nn.Linear(atom_z, atom_encoder_depth * atom_encoder_heads, bias=False),
+            nn.Linear(
+                atom_z, atom_encoder_depth * atom_encoder_heads, bias=False
+            ),
         )
 
         self.atom_attention_encoder = AtomAttentionEncoder(
@@ -135,8 +141,12 @@ class InputEmbedder(nn.Module):
             activation_checkpointing=activation_checkpointing,
         )
 
-        self.res_type_encoding = nn.Linear(const.num_tokens, token_s, bias=False)
-        self.msa_profile_encoding = nn.Linear(const.num_tokens + 1, token_s, bias=False)
+        self.res_type_encoding = nn.Linear(
+            const.num_tokens, token_s, bias=False
+        )
+        self.msa_profile_encoding = nn.Linear(
+            const.num_tokens + 1, token_s, bias=False
+        )
 
         if add_method_conditioning:
             self.method_conditioning_init = nn.Embedding(
@@ -155,7 +165,9 @@ class InputEmbedder(nn.Module):
             )
             self.mol_type_conditioning_init.weight.data.fill_(0)
 
-    def forward(self, feats: dict[str, Tensor], affinity: bool = False) -> Tensor:
+    def forward(
+        self, feats: dict[str, Tensor], affinity: bool = False
+    ) -> Tensor:
         """Perform the forward pass.
 
         Parameters
@@ -192,7 +204,9 @@ class InputEmbedder(nn.Module):
         s = (
             a
             + self.res_type_encoding(res_type)
-            + self.msa_profile_encoding(torch.cat([profile, deletion_mean], dim=-1))
+            + self.msa_profile_encoding(
+                torch.cat([profile, deletion_mean], dim=-1)
+            )
         )
 
         if self.add_method_conditioning:
@@ -311,7 +325,9 @@ class TemplateModule(nn.Module):
         with torch.autocast(device_type="cuda", enabled=False):
             # Compute distogram
             cb_dists = torch.cdist(cb_coords, cb_coords)
-            boundaries = torch.linspace(self.min_dist, self.max_dist, self.num_bins - 1)
+            boundaries = torch.linspace(
+                self.min_dist, self.max_dist, self.num_bins - 1
+            )
             boundaries = boundaries.to(cb_dists.device)
             distogram = (cb_dists[..., None] > boundaries).sum(dim=-1).long()
             distogram = one_hot(distogram, num_classes=self.num_bins)
@@ -322,7 +338,9 @@ class TemplateModule(nn.Module):
             ca_coords = ca_coords.unsqueeze(3).unsqueeze(-1)
             vector = torch.matmul(frame_rot, (ca_coords - frame_t))
             norm = torch.norm(vector, dim=-1, keepdim=True)
-            unit_vector = torch.where(norm > 0, vector / norm, torch.zeros_like(vector))
+            unit_vector = torch.where(
+                norm > 0, vector / norm, torch.zeros_like(vector)
+            )
             unit_vector = unit_vector.squeeze(-1)
 
             # Concatenate input features
@@ -462,7 +480,9 @@ class TemplateV2Module(nn.Module):
         with torch.autocast(device_type="cuda", enabled=False):
             # Compute distogram
             cb_dists = torch.cdist(cb_coords, cb_coords)
-            boundaries = torch.linspace(self.min_dist, self.max_dist, self.num_bins - 1)
+            boundaries = torch.linspace(
+                self.min_dist, self.max_dist, self.num_bins - 1
+            )
             boundaries = boundaries.to(cb_dists.device)
             distogram = (cb_dists[..., None] > boundaries).sum(dim=-1).long()
             distogram = one_hot(distogram, num_classes=self.num_bins)
@@ -473,7 +493,9 @@ class TemplateV2Module(nn.Module):
             ca_coords = ca_coords.unsqueeze(3).unsqueeze(-1)
             vector = torch.matmul(frame_rot, (ca_coords - frame_t))
             norm = torch.norm(vector, dim=-1, keepdim=True)
-            unit_vector = torch.where(norm > 0, vector / norm, torch.zeros_like(vector))
+            unit_vector = torch.where(
+                norm > 0, vector / norm, torch.zeros_like(vector)
+            )
             unit_vector = unit_vector.squeeze(-1)
 
             # Concatenate input features
@@ -623,13 +645,17 @@ class MSAModule(nn.Module):
 
         # Compute MSA embeddings
         if self.use_paired_feature:
-            m = torch.cat([msa, has_deletion, deletion_value, is_paired], dim=-1)
+            m = torch.cat(
+                [msa, has_deletion, deletion_value, is_paired], dim=-1
+            )
         else:
             m = torch.cat([msa, has_deletion, deletion_value], dim=-1)
 
         # Subsample the MSA
         if self.subsample_msa:
-            msa_indices = torch.randperm(msa.shape[1])[: self.num_subsampled_msa]
+            msa_indices = torch.randperm(msa.shape[1])[
+                : self.num_subsampled_msa
+            ]
             m = m[:, msa_indices]
             msa_mask = msa_mask[:, msa_indices]
 
@@ -794,7 +820,9 @@ class BFactorModule(nn.Module):
 class DistogramModule(nn.Module):
     """Distogram Module."""
 
-    def __init__(self, token_z: int, num_bins: int, num_distograms: int = 1) -> None:
+    def __init__(
+        self, token_z: int, num_bins: int, num_distograms: int = 1
+    ) -> None:
         """Initialize the distogram module.
 
         Parameters
@@ -824,5 +852,9 @@ class DistogramModule(nn.Module):
         """
         z = z + z.transpose(1, 2)
         return self.distogram(z).reshape(
-            z.shape[0], z.shape[1], z.shape[2], self.num_distograms, self.num_bins
+            z.shape[0],
+            z.shape[1],
+            z.shape[2],
+            self.num_distograms,
+            self.num_bins,
         )

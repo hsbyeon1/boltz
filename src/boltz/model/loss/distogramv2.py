@@ -26,7 +26,9 @@ def distogram_loss(
     """
     with torch.autocast("cuda", enabled=False):
         # Get predicted distograms
-        pred = output["pdistogram"].float()  # (B, L, L, num_distograms, disto_bins)
+        pred = output[
+            "pdistogram"
+        ].float()  # (B, L, L, num_distograms, disto_bins)
         D = pred.shape[3]  # num_distograms  # noqa: N806
         assert len(pred.shape) == 5  # noqa: PLR2004
 
@@ -85,7 +87,9 @@ def distogram_loss(
                 mask = feats["token_disto_mask"]
                 mask = mask[:, None, :] * mask[:, :, None]
                 mask = mask * (1 - torch.eye(mask.shape[1])[None]).to(pred)
-                mask = mask.unsqueeze(-1).repeat_interleave(D, -1)  # (B, L, L, D)
+                mask = mask.unsqueeze(-1).repeat_interleave(
+                    D, -1
+                )  # (B, L, L, D)
 
                 denom = 1e-5 + torch.sum(mask, dim=(-2, -3))  # (B, D)
                 mean = errors * mask

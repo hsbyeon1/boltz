@@ -9,7 +9,9 @@ from boltz.data.sample.sampler import Sample, Sampler
 class DistillationSampler(Sampler):
     """A sampler for monomer distillation data."""
 
-    def __init__(self, small_size: int = 200, small_prob: float = 0.01) -> None:
+    def __init__(
+        self, small_size: int = 200, small_prob: float = 0.01
+    ) -> None:
         """Initialize the sampler.
 
         Parameters
@@ -23,7 +25,9 @@ class DistillationSampler(Sampler):
         self._size = small_size
         self._prob = small_prob
 
-    def sample(self, records: List[Record], random: RandomState) -> Iterator[Sample]:
+    def sample(
+        self, records: List[Record], random: RandomState
+    ) -> Iterator[Sample]:
         """Sample a structure from the dataset infinitely.
 
         Parameters

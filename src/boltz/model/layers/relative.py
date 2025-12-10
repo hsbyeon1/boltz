@@ -26,7 +26,8 @@ def compute_relative_distribution_perfect_correlation(
         device=binned_distribution_1.device,
     )
     zero = torch.zeros(
-        binned_distribution_1.shape[:-1] + (1,), device=binned_distribution_1.device
+        binned_distribution_1.shape[:-1] + (1,),
+        device=binned_distribution_1.device,
     )
 
     binned_distribution_1 = torch.cat([zero, binned_distribution_1], dim=-1)
@@ -39,9 +40,12 @@ def compute_relative_distribution_perfect_correlation(
         relative_distribution[..., K - 1 + i] = torch.sum(
             torch.relu(
                 torch.minimum(
-                    cumulative_1[..., 1 + i :], cumulative_2[..., 1 : K + 1 - i]
+                    cumulative_1[..., 1 + i :],
+                    cumulative_2[..., 1 : K + 1 - i],
                 )
-                - torch.maximum(cumulative_1[..., i:-1], cumulative_2[..., : K - i]),
+                - torch.maximum(
+                    cumulative_1[..., i:-1], cumulative_2[..., : K - i]
+                ),
             )
         )
 
@@ -49,9 +53,12 @@ def compute_relative_distribution_perfect_correlation(
         relative_distribution[..., K - 1 - i] = torch.sum(
             torch.relu(
                 torch.minimum(
-                    cumulative_2[..., 1 + i :], cumulative_1[..., 1 : K + 1 - i]
+                    cumulative_2[..., 1 + i :],
+                    cumulative_1[..., 1 : K + 1 - i],
                 )
-                - torch.maximum(cumulative_2[..., i:-1], cumulative_1[..., : K - i]),
+                - torch.maximum(
+                    cumulative_2[..., i:-1], cumulative_1[..., : K - i]
+                ),
             )
         )
 

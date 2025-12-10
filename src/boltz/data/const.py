@@ -203,7 +203,9 @@ chirality_types = [
     "CHI_TRIGONALBIPYRAMIDAL",
     "CHI_OTHER",
 ]
-chirality_type_ids = {chirality: i for i, chirality in enumerate(chirality_types)}
+chirality_type_ids = {
+    chirality: i for i, chirality in enumerate(chirality_types)
+}
 unk_chirality_type = "CHI_OTHER"
 
 hybridization_map = [
@@ -217,7 +219,9 @@ hybridization_map = [
     "OTHER",
     "UNSPECIFIED",
 ]
-hybridization_type_ids = {hybrid: i for i, hybrid in enumerate(hybridization_map)}
+hybridization_type_ids = {
+    hybrid: i for i, hybrid in enumerate(hybridization_map)
+}
 unk_hybridization_type = "UNSPECIFIED"
 
 # fmt: off
@@ -826,8 +830,22 @@ ambiguous_atoms = {
         "TY1": "C",
         "VM1": "C",
     },
-    "OS": {"*": "O", "DWC": "OS", "OHX": "OS", "OS": "OS", "8WV": "OS", "OS4": "OS"},
-    "PB": {"*": "P", "ZN9": "PB", "ZN7": "PB", "PBM": "PB", "PB": "PB", "CSB": "PB"},
+    "OS": {
+        "*": "O",
+        "DWC": "OS",
+        "OHX": "OS",
+        "OS": "OS",
+        "8WV": "OS",
+        "OS4": "OS",
+    },
+    "PB": {
+        "*": "P",
+        "ZN9": "PB",
+        "ZN7": "PB",
+        "PBM": "PB",
+        "PB": "PB",
+        "CSB": "PB",
+    },
     "CE": {"*": "C", "CE": "CE"},
     "FE": {"*": "FE", "TFR": "F", "PF5": "F", "IFC": "F", "F5C": "F"},
     "NA": {"*": "N", "CGO": "NA", "R2K": "NA", "LVQ": "NA", "NA": "NA"},
@@ -843,7 +861,14 @@ ambiguous_atoms = {
     "AG": "AG",
     "CLN": "CL",
     "CLM": "CL",
-    "CLA": {"*": "CL", "PII": "C", "TDL": "C", "D0J": "C", "GM2": "C", "PIJ": "C"},
+    "CLA": {
+        "*": "CL",
+        "PII": "C",
+        "TDL": "C",
+        "D0J": "C",
+        "GM2": "C",
+        "PIJ": "C",
+    },
     "CLB": {
         "*": "CL",
         "TD5": "C",
@@ -997,7 +1022,14 @@ ambiguous_atoms = {
         "WCC": "NI",
         "NUF": "NI",
     },
-    "SB": {"*": "S", "UJI": "SB", "SB": "SB", "118": "SB", "SBO": "SB", "3CG": "SB"},
+    "SB": {
+        "*": "S",
+        "UJI": "SB",
+        "SB": "SB",
+        "118": "SB",
+        "SBO": "SB",
+        "3CG": "SB",
+    },
     "MO": "MO",
     "SEG": "SE",
     "CLL": "CL",
