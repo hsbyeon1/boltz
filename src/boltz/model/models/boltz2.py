@@ -1135,6 +1135,7 @@ class Boltz2(LightningModule):
                 run_confidence_sequentially=True,
             )
             pred_dict = {"exception": False}
+            pred_dict["pdistogram"] = out["pdistogram"]
             if "keys_dict_batch" in self.predict_args:
                 for key in self.predict_args["keys_dict_batch"]:
                     pred_dict[key] = batch[key]

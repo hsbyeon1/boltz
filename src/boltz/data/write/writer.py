@@ -24,6 +24,7 @@ class BoltzWriter(BasePredictionWriter):
         output_format: Literal["pdb", "mmcif"] = "mmcif",
         boltz2: bool = False,
         write_embeddings: bool = False,
+        save_distogram: bool = False,
     ) -> None:
         """Initialize the writer.
 
@@ -43,6 +44,7 @@ class BoltzWriter(BasePredictionWriter):
         self.output_format = output_format
         self.failed = 0
         self.boltz2 = boltz2
+        self.save_distogram = save_distogram
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.write_embeddings = write_embeddings
 
@@ -70,6 +72,10 @@ class BoltzWriter(BasePredictionWriter):
 
         pad_masks = prediction["masks"]
 
+        distograms = (
+            prediction["pdistogram"].to("cpu", dtype=torch.float32).numpy()
+        )
+
         # Get ranking
         if "confidence_score" in prediction:
             argsort = torch.argsort(
@@ -83,9 +89,19 @@ class BoltzWriter(BasePredictionWriter):
             idx_to_rank = {i: i for i in range(len(records))}
 
         # Iterate over the records
-        for record, coord, pad_mask in zip(records, coords, pad_masks):
+        for record, coord, pad_mask, distogram in zip(
+            records, coords, pad_masks, distograms
+        ):
             # Load the structure
             path = self.data_dir / f"{record.id}.npz"
+
+            struct_dir = self.output_dir / record.id
+            struct_dir.mkdir(exist_ok=True)
+
+            if self.save_distogram:
+                distogram_path = struct_dir / f"distogram_{record.id}.npz"
+                np.savez_compressed(distogram_path, distogram)
+
             if self.boltz2:
                 structure: StructureV2 = StructureV2.load(path)
             else:
@@ -149,10 +165,6 @@ class BoltzWriter(BasePredictionWriter):
                         valid=True,
                     )
                     chain_info.append(new_chain_info)
-
-                # Save the structure
-                struct_dir = self.output_dir / record.id
-                struct_dir.mkdir(exist_ok=True)
 
                 # Get plddt's
                 plddts = None
