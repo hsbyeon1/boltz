@@ -1257,6 +1257,7 @@ class Boltz1(LightningModule):
                 run_confidence_sequentially=True,
             )
             pred_dict = {"exception": False}
+            pred_dict["pdistogram"] = out["pdistogram"]
             pred_dict["masks"] = batch["atom_pad_mask"]
             pred_dict["coords"] = out["sample_atom_coords"]
             pred_dict["s"] = out["s"]
