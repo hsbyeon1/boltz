@@ -168,3 +168,5 @@ boltz_results_*/
 # uv files
 .python-version
 uv.lock
+
+.vscode
