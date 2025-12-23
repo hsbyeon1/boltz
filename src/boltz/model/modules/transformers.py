@@ -73,9 +73,7 @@ class ConditionedTransitionBlock(Module):
         nn.init.zeros_(output_projection_linear.weight)
         nn.init.constant_(output_projection_linear.bias, -2.0)
 
-        self.output_projection = nn.Sequential(
-            output_projection_linear, nn.Sigmoid()
-        )
+        self.output_projection = nn.Sequential(output_projection_linear, nn.Sigmoid())
 
     def forward(
         self,
@@ -304,9 +302,7 @@ class AtomTransformer(Module):
             p = p.repeat_interleave(multiplicity, 0)
             p = p.view((p.shape[0] * NW, W, H, -1))
 
-            to_keys_new = lambda x: to_keys(x.view(B, NW * W, -1)).view(
-                B * NW, H, -1
-            )
+            to_keys_new = lambda x: to_keys(x.view(B, NW * W, -1)).view(B * NW, H, -1)
         else:
             to_keys_new = None
 

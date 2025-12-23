@@ -4,8 +4,8 @@ import numpy as np
 from numpy.random import RandomState
 
 from boltz.data import const
-from boltz.data.types import ChainInfo, InterfaceInfo, Record
 from boltz.data.sample.sampler import Sample, Sampler
+from boltz.data.types import ChainInfo, InterfaceInfo, Record
 
 
 def get_chain_cluster(chain: ChainInfo, record: Record) -> str:  # noqa: ARG001
@@ -155,12 +155,8 @@ def get_interface_weight(
     n_nuc += chain2.mol_type in [rna_id, dna_id]
     n_ligand += chain2.mol_type == ligand_id
 
-    weight = (
-        beta_interface / clusters[get_interface_cluster(interface, record)]
-    )
-    weight *= (
-        alpha_prot * n_prot + alpha_nucl * n_nuc + alpha_ligand * n_ligand
-    )
+    weight = beta_interface / clusters[get_interface_cluster(interface, record)]
+    weight *= alpha_prot * n_prot + alpha_nucl * n_nuc + alpha_ligand * n_ligand
     return weight
 
 
@@ -205,9 +201,7 @@ class ClusterSampler(Sampler):
         self.beta_chain = beta_chain
         self.beta_interface = beta_interface
 
-    def sample(
-        self, records: List[Record], random: RandomState
-    ) -> Iterator[Sample]:  # noqa: C901, PLR0912
+    def sample(self, records: List[Record], random: RandomState) -> Iterator[Sample]:  # noqa: C901, PLR0912
         """Sample a structure from the dataset infinitely.
 
         Parameters

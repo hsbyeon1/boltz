@@ -106,10 +106,7 @@ class ConfidenceModule(nn.Module):
         self.imitate_trunk = imitate_trunk
         if self.imitate_trunk:
             s_input_dim = (
-                token_s
-                + 2 * const.num_tokens
-                + 1
-                + len(const.pocket_contact_info)
+                token_s + 2 * const.num_tokens + 1 + len(const.pocket_contact_info)
             )
             self.s_init = nn.Linear(s_input_dim, token_s, bias=False)
             self.z_init_1 = nn.Linear(s_input_dim, token_z, bias=False)
@@ -220,19 +217,14 @@ class ConfidenceModule(nn.Module):
             out_dict = {}
             for key in out_dicts[0]:
                 if key != "pair_chains_iptm":
-                    out_dict[key] = torch.cat(
-                        [out[key] for out in out_dicts], dim=0
-                    )
+                    out_dict[key] = torch.cat([out[key] for out in out_dicts], dim=0)
                 else:
                     pair_chains_iptm = {}
                     for chain_idx1 in out_dicts[0][key].keys():
                         chains_iptm = {}
                         for chain_idx2 in out_dicts[0][key][chain_idx1].keys():
                             chains_iptm[chain_idx2] = torch.cat(
-                                [
-                                    out[key][chain_idx1][chain_idx2]
-                                    for out in out_dicts
-                                ],
+                                [out[key][chain_idx1][chain_idx2] for out in out_dicts],
                                 dim=0,
                             )
                         pair_chains_iptm[chain_idx1] = chains_iptm
@@ -256,9 +248,7 @@ class ConfidenceModule(nn.Module):
             z = z_init + self.z_recycle(self.z_norm(z))
 
         else:
-            s_inputs = self.s_inputs_norm(s_inputs).repeat_interleave(
-                multiplicity, 0
-            )
+            s_inputs = self.s_inputs_norm(s_inputs).repeat_interleave(multiplicity, 0)
             if not self.no_update_s:
                 s = self.s_norm(s)
 
@@ -293,9 +283,7 @@ class ConfidenceModule(nn.Module):
             )
 
         token_to_rep_atom = feats["token_to_rep_atom"]
-        token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-            multiplicity, 0
-        )
+        token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0)
         if len(x_pred.shape) == 4:
             B, mult, N, _ = x_pred.shape
             x_pred = x_pred.reshape(B * mult, N, -1)
@@ -311,9 +299,7 @@ class ConfidenceModule(nn.Module):
         pair_mask = mask[:, :, None] * mask[:, None, :]
 
         if self.imitate_trunk:
-            z = z + self.msa_module(
-                z, s_inputs, feats, use_kernels=use_kernels
-            )
+            z = z + self.msa_module(z, s_inputs, feats, use_kernels=use_kernels)
 
             s, z = self.pairformer_module(
                 s, z, mask=mask, pair_mask=pair_mask, use_kernels=use_kernels
@@ -411,53 +397,42 @@ class ConfidenceHeads(nn.Module):
         # Retrieve relevant features
         token_type = feats["mol_type"]
         token_type = token_type.repeat_interleave(multiplicity, 0)
-        is_ligand_token = (
-            token_type == const.chain_type_ids["NONPOLYMER"]
-        ).float()
+        is_ligand_token = (token_type == const.chain_type_ids["NONPOLYMER"]).float()
 
         # Compute the aggregated pLDDT and iPLDDT
         plddt = compute_aggregated_metric(plddt_logits)
-        token_pad_mask = feats["token_pad_mask"].repeat_interleave(
-            multiplicity, 0
-        )
-        complex_plddt = (plddt * token_pad_mask).sum(
+        token_pad_mask = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
+        complex_plddt = (plddt * token_pad_mask).sum(dim=-1) / token_pad_mask.sum(
             dim=-1
-        ) / token_pad_mask.sum(dim=-1)
+        )
 
         is_contact = (d < 8).float()
         is_different_chain = (
             feats["asym_id"].unsqueeze(-1) != feats["asym_id"].unsqueeze(-2)
         ).float()
-        is_different_chain = is_different_chain.repeat_interleave(
-            multiplicity, 0
-        )
+        is_different_chain = is_different_chain.repeat_interleave(multiplicity, 0)
         token_interface_mask = torch.max(
-            is_contact
-            * is_different_chain
-            * (1 - is_ligand_token).unsqueeze(-1),
+            is_contact * is_different_chain * (1 - is_ligand_token).unsqueeze(-1),
             dim=-1,
         ).values
         iplddt_weight = (
-            is_ligand_token * ligand_weight
-            + token_interface_mask * interface_weight
+            is_ligand_token * ligand_weight + token_interface_mask * interface_weight
         )
-        complex_iplddt = (plddt * token_pad_mask * iplddt_weight).sum(
-            dim=-1
-        ) / (torch.sum(token_pad_mask * iplddt_weight, dim=-1) + 1e-5)
+        complex_iplddt = (plddt * token_pad_mask * iplddt_weight).sum(dim=-1) / (
+            torch.sum(token_pad_mask * iplddt_weight, dim=-1) + 1e-5
+        )
 
         # Compute the aggregated PDE and iPDE
         pde = compute_aggregated_metric(pde_logits, end=32)
         pred_distogram_prob = nn.functional.softmax(
             pred_distogram_logits, dim=-1
         ).repeat_interleave(multiplicity, 0)
-        contacts = torch.zeros(
-            (1, 1, 1, 64), dtype=pred_distogram_prob.dtype
-        ).to(pred_distogram_prob.device)
+        contacts = torch.zeros((1, 1, 1, 64), dtype=pred_distogram_prob.dtype).to(
+            pred_distogram_prob.device
+        )
         contacts[:, :, :, :20] = 1.0
         prob_contact = (pred_distogram_prob * contacts).sum(-1)
-        token_pad_mask = feats["token_pad_mask"].repeat_interleave(
-            multiplicity, 0
-        )
+        token_pad_mask = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
         token_pad_pair_mask = (
             token_pad_mask.unsqueeze(-1)
             * token_pad_mask.unsqueeze(-2)
@@ -469,9 +444,9 @@ class ConfidenceHeads(nn.Module):
             )
         )
         token_pair_mask = token_pad_pair_mask * prob_contact
-        complex_pde = (pde * token_pair_mask).sum(
+        complex_pde = (pde * token_pair_mask).sum(dim=(1, 2)) / token_pair_mask.sum(
             dim=(1, 2)
-        ) / token_pair_mask.sum(dim=(1, 2))
+        )
         asym_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
         token_interface_pair_mask = token_pair_mask * (
             asym_id.unsqueeze(-1) != asym_id.unsqueeze(-2)
@@ -494,8 +469,8 @@ class ConfidenceHeads(nn.Module):
         if self.compute_pae:
             out_dict["pae_logits"] = pae_logits
             out_dict["pae"] = compute_aggregated_metric(pae_logits, end=32)
-            ptm, iptm, ligand_iptm, protein_iptm, pair_chains_iptm = (
-                compute_ptms(pae_logits, x_pred, feats, multiplicity)
+            ptm, iptm, ligand_iptm, protein_iptm, pair_chains_iptm = compute_ptms(
+                pae_logits, x_pred, feats, multiplicity
             )
             out_dict["ptm"] = ptm
             out_dict["iptm"] = iptm

@@ -73,9 +73,7 @@ class TriangleMultiplicationOutgoing(nn.Module):
         init.final_init_(self.p_out.weight)
         init.gating_init_(self.g_out.weight)
 
-    def forward(
-        self, x: Tensor, mask: Tensor, use_kernels: bool = False
-    ) -> Tensor:
+    def forward(self, x: Tensor, mask: Tensor, use_kernels: bool = False) -> Tensor:
         """Perform a forward pass.
 
         Parameters
@@ -163,9 +161,7 @@ class TriangleMultiplicationIncoming(nn.Module):
         init.final_init_(self.p_out.weight)
         init.gating_init_(self.g_out.weight)
 
-    def forward(
-        self, x: Tensor, mask: Tensor, use_kernels: bool = False
-    ) -> Tensor:
+    def forward(self, x: Tensor, mask: Tensor, use_kernels: bool = False) -> Tensor:
         """Perform a forward pass.
 
         Parameters

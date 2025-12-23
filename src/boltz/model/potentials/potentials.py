@@ -1,15 +1,16 @@
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any, Set, List, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
-import torch
 import numpy as np
+import torch
+
 from boltz.data import const
+from boltz.model.loss.diffusionv2 import weighted_rigid_align
 from boltz.model.potentials.schedules import (
-    ParameterSchedule,
     ExponentialInterpolation,
+    ParameterSchedule,
     PiecewiseStepFunction,
 )
-from boltz.model.loss.diffusionv2 import weighted_rigid_align
 
 
 class Potential(ABC):
@@ -73,9 +74,7 @@ class Potential(ABC):
         )
 
         if union_index is not None:
-            neg_exp_energy = torch.exp(
-                -1 * parameters["union_lambda"] * energy
-            )
+            neg_exp_energy = torch.exp(-1 * parameters["union_lambda"] * energy)
             Z = torch.zeros(
                 (*energy.shape[:-1], union_index.max() + 1),
                 device=union_index.device,
@@ -142,9 +141,7 @@ class Potential(ABC):
             value, *args, negation_mask=negation_mask, compute_derivative=True
         )
         if union_index is not None:
-            neg_exp_energy = torch.exp(
-                -1 * parameters["union_lambda"] * energy
-            )
+            neg_exp_energy = torch.exp(-1 * parameters["union_lambda"] * energy)
             Z = torch.zeros(
                 (*energy.shape[:-1], union_index.max() + 1),
                 device=union_index.device,
@@ -168,11 +165,7 @@ class Potential(ABC):
             dSoftmax = (
                 dEnergy
                 * softmax_energy
-                * (
-                    1
-                    + parameters["union_lambda"]
-                    * (energy - f[..., union_index])
-                )
+                * (1 + parameters["union_lambda"] * (energy - f[..., union_index]))
             )
             prod = dSoftmax.tile(grad_value.shape[-3]).unsqueeze(
                 -1
@@ -260,27 +253,21 @@ class FlatBottomPotential(Potential):
             unbounded_above_mask = torch.isposinf(upper_bounds)
             unbounded_mask = unbounded_below_mask + unbounded_above_mask
             assert torch.all(unbounded_mask + negation_mask)
-            lower_bounds[~unbounded_above_mask * ~negation_mask] = (
-                upper_bounds[~unbounded_above_mask * ~negation_mask]
-            )
+            lower_bounds[~unbounded_above_mask * ~negation_mask] = upper_bounds[
+                ~unbounded_above_mask * ~negation_mask
+            ]
             upper_bounds[~unbounded_above_mask * ~negation_mask] = float("inf")
-            upper_bounds[~unbounded_below_mask * ~negation_mask] = (
-                lower_bounds[~unbounded_below_mask * ~negation_mask]
-            )
-            lower_bounds[~unbounded_below_mask * ~negation_mask] = float(
-                "-inf"
-            )
+            upper_bounds[~unbounded_below_mask * ~negation_mask] = lower_bounds[
+                ~unbounded_below_mask * ~negation_mask
+            ]
+            lower_bounds[~unbounded_below_mask * ~negation_mask] = float("-inf")
 
         neg_overflow_mask = value < lower_bounds
         pos_overflow_mask = value > upper_bounds
 
         energy = torch.zeros_like(value)
-        energy[neg_overflow_mask] = (k * (lower_bounds - value))[
-            neg_overflow_mask
-        ]
-        energy[pos_overflow_mask] = (k * (value - upper_bounds))[
-            pos_overflow_mask
-        ]
+        energy[neg_overflow_mask] = (k * (lower_bounds - value))[neg_overflow_mask]
+        energy[pos_overflow_mask] = (k * (value - upper_bounds))[pos_overflow_mask]
         if not compute_derivative:
             return energy
 
@@ -326,9 +313,7 @@ class DistancePotential(Potential):
         ref_mask=None,
         compute_gradient=False,
     ):
-        r_ij = coords.index_select(-2, index[0]) - coords.index_select(
-            -2, index[1]
-        )
+        r_ij = coords.index_select(-2, index[0]) - coords.index_select(-2, index[1])
         r_ij_norm = torch.linalg.norm(r_ij, dim=-1)
         r_hat_ij = r_ij / r_ij_norm.unsqueeze(-1)
 
@@ -350,15 +335,9 @@ class DihedralPotential(Potential):
         ref_mask=None,
         compute_gradient=False,
     ):
-        r_ij = coords.index_select(-2, index[0]) - coords.index_select(
-            -2, index[1]
-        )
-        r_kj = coords.index_select(-2, index[2]) - coords.index_select(
-            -2, index[1]
-        )
-        r_kl = coords.index_select(-2, index[2]) - coords.index_select(
-            -2, index[3]
-        )
+        r_ij = coords.index_select(-2, index[0]) - coords.index_select(-2, index[1])
+        r_kj = coords.index_select(-2, index[2]) - coords.index_select(-2, index[1])
+        r_kl = coords.index_select(-2, index[2]) - coords.index_select(-2, index[3])
 
         n_ijk = torch.cross(r_ij, r_kj, dim=-1)
         n_jkl = torch.cross(r_kj, r_kl, dim=-1)
@@ -368,8 +347,7 @@ class DihedralPotential(Potential):
         n_jkl_norm = torch.linalg.norm(n_jkl, dim=-1)
 
         sign_phi = torch.sign(
-            r_kj.unsqueeze(-2)
-            @ torch.cross(n_ijk, n_jkl, dim=-1).unsqueeze(-1)
+            r_kj.unsqueeze(-2) @ torch.cross(n_ijk, n_jkl, dim=-1).unsqueeze(-1)
         ).squeeze(-1, -2)
         phi = sign_phi * torch.arccos(
             torch.clamp(
@@ -384,12 +362,10 @@ class DihedralPotential(Potential):
             return phi
 
         a = (
-            (r_ij.unsqueeze(-2) @ r_kj.unsqueeze(-1)).squeeze(-1, -2)
-            / (r_kj_norm**2)
+            (r_ij.unsqueeze(-2) @ r_kj.unsqueeze(-1)).squeeze(-1, -2) / (r_kj_norm**2)
         ).unsqueeze(-1)
         b = (
-            (r_kl.unsqueeze(-2) @ r_kj.unsqueeze(-1)).squeeze(-1, -2)
-            / (r_kj_norm**2)
+            (r_kl.unsqueeze(-2) @ r_kj.unsqueeze(-1)).squeeze(-1, -2) / (r_kj_norm**2)
         ).unsqueeze(-1)
 
         grad_i = n_ijk * (r_kj_norm / n_ijk_norm**2).unsqueeze(-1)
@@ -433,27 +409,17 @@ class PoseBustersPotential(FlatBottomPotential, DistancePotential):
         bond_mask = feats["rdkit_bounds_bond_mask"][0]
         angle_mask = feats["rdkit_bounds_angle_mask"][0]
 
-        lower_bounds[bond_mask * ~angle_mask] *= (
-            1.0 - parameters["bond_buffer"]
-        )
-        upper_bounds[bond_mask * ~angle_mask] *= (
-            1.0 + parameters["bond_buffer"]
-        )
-        lower_bounds[~bond_mask * angle_mask] *= (
-            1.0 - parameters["angle_buffer"]
-        )
-        upper_bounds[~bond_mask * angle_mask] *= (
-            1.0 + parameters["angle_buffer"]
-        )
+        lower_bounds[bond_mask * ~angle_mask] *= 1.0 - parameters["bond_buffer"]
+        upper_bounds[bond_mask * ~angle_mask] *= 1.0 + parameters["bond_buffer"]
+        lower_bounds[~bond_mask * angle_mask] *= 1.0 - parameters["angle_buffer"]
+        upper_bounds[~bond_mask * angle_mask] *= 1.0 + parameters["angle_buffer"]
         lower_bounds[bond_mask * angle_mask] *= 1.0 - min(
             parameters["bond_buffer"], parameters["angle_buffer"]
         )
         upper_bounds[bond_mask * angle_mask] *= 1.0 + min(
             parameters["bond_buffer"], parameters["angle_buffer"]
         )
-        lower_bounds[~bond_mask * ~angle_mask] *= (
-            1.0 - parameters["clash_buffer"]
-        )
+        lower_bounds[~bond_mask * ~angle_mask] *= 1.0 - parameters["clash_buffer"]
         upper_bounds[~bond_mask * ~angle_mask] = float("inf")
 
         vdw_radii = torch.zeros(
@@ -526,21 +492,19 @@ class VDWOverlapPotential(FlatBottomPotential, DistancePotential):
         )
 
         pair_pad_mask = atom_pad_mask[pair_index].all(dim=0)
-        pair_ion_mask = (
-            single_ion_mask[pair_index[0]] * single_ion_mask[pair_index[1]]
-        )
+        pair_ion_mask = single_ion_mask[pair_index[0]] * single_ion_mask[pair_index[1]]
 
         num_chains = atom_chain_id.max() + 1
         connected_chain_index = feats["connected_chain_index"][0]
         connected_chain_matrix = torch.eye(
             num_chains, device=atom_chain_id.device, dtype=torch.bool
         )
-        connected_chain_matrix[
-            connected_chain_index[0], connected_chain_index[1]
-        ] = True
-        connected_chain_matrix[
-            connected_chain_index[1], connected_chain_index[0]
-        ] = True
+        connected_chain_matrix[connected_chain_index[0], connected_chain_index[1]] = (
+            True
+        )
+        connected_chain_matrix[connected_chain_index[1], connected_chain_index[0]] = (
+            True
+        )
         connected_chain_mask = connected_chain_matrix[
             atom_chain_id[pair_index[0]], atom_chain_id[pair_index[1]]
         ]
@@ -573,9 +537,7 @@ class SymmetricChainCOMPotential(FlatBottomPotential, DistancePotential):
         single_ion_mask = chain_sizes > 1
 
         pair_index = feats["symmetric_chain_index"][0]
-        pair_ion_mask = (
-            single_ion_mask[pair_index[0]] * single_ion_mask[pair_index[1]]
-        )
+        pair_ion_mask = single_ion_mask[pair_index[0]] * single_ion_mask[pair_index[1]]
         pair_index = pair_index[:, pair_ion_mask]
         lower_bounds = torch.full(
             (pair_index.shape[1],),
@@ -608,9 +570,7 @@ class StereoBondPotential(FlatBottomPotential, AbsDihedralPotential):
             stereo_bond_orientations.shape,
             device=stereo_bond_orientations.device,
         )
-        lower_bounds[stereo_bond_orientations] = (
-            torch.pi - parameters["buffer"]
-        )
+        lower_bounds[stereo_bond_orientations] = torch.pi - parameters["buffer"]
         upper_bounds[stereo_bond_orientations] = float("inf")
         lower_bounds[~stereo_bond_orientations] = float("-inf")
         upper_bounds[~stereo_bond_orientations] = parameters["buffer"]
@@ -764,10 +724,7 @@ class ContactPotentital(FlatBottomPotential, DistancePotential):
 
 def get_potentials(steering_args, boltz2=False):
     potentials = []
-    if (
-        steering_args["fk_steering"]
-        or steering_args["physical_guidance_update"]
-    ):
+    if steering_args["fk_steering"] or steering_args["physical_guidance_update"]:
         potentials.extend(
             [
                 SymmetricChainCOMPotential(
@@ -786,9 +743,7 @@ def get_potentials(steering_args, boltz2=False):
                     parameters={
                         "guidance_interval": 5,
                         "guidance_weight": (
-                            PiecewiseStepFunction(
-                                thresholds=[0.4], values=[0.125, 0.0]
-                            )
+                            PiecewiseStepFunction(thresholds=[0.4], values=[0.125, 0.0])
                             if steering_args["physical_guidance_update"]
                             else 0.0
                         ),
@@ -853,8 +808,7 @@ def get_potentials(steering_args, boltz2=False):
             ]
         )
     if boltz2 and (
-        steering_args["fk_steering"]
-        or steering_args["contact_guidance_update"]
+        steering_args["fk_steering"] or steering_args["contact_guidance_update"]
     ):
         potentials.extend(
             [

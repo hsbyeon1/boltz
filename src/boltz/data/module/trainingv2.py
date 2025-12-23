@@ -214,9 +214,7 @@ class TrainingDataset(torch.utils.data.Dataset):
         self.num_bins = num_bins
         self.binder_pocket_conditioned_prop = binder_pocket_conditioned_prop
         self.binder_pocket_cutoff = binder_pocket_cutoff
-        self.binder_pocket_sampling_geometric_p = (
-            binder_pocket_sampling_geometric_p
-        )
+        self.binder_pocket_sampling_geometric_p = binder_pocket_sampling_geometric_p
         self.return_symmetries = return_symmetries
         self.samples = []
         for dataset in datasets:
@@ -252,9 +250,7 @@ class TrainingDataset(torch.utils.data.Dataset):
 
         # Get the structure
         try:
-            input_data = load_input(
-                sample.record, dataset.target_dir, dataset.msa_dir
-            )
+            input_data = load_input(sample.record, dataset.target_dir, dataset.msa_dir)
         except Exception as e:
             print(
                 f"Failed to load input for {sample.record.id} with error {e}. Skipping."
@@ -265,9 +261,7 @@ class TrainingDataset(torch.utils.data.Dataset):
         try:
             tokenized = dataset.tokenizer.tokenize(input_data)
         except Exception as e:
-            print(
-                f"Tokenizer failed on {sample.record.id} with error {e}. Skipping."
-            )
+            print(f"Tokenizer failed on {sample.record.id} with error {e}. Skipping.")
             return self.__getitem__(idx)
 
         # Compute crop
@@ -282,9 +276,7 @@ class TrainingDataset(torch.utils.data.Dataset):
                     interface_id=sample.interface_id,
                 )
         except Exception as e:
-            print(
-                f"Cropper failed on {sample.record.id} with error {e}. Skipping."
-            )
+            print(f"Cropper failed on {sample.record.id} with error {e}. Skipping.")
             return self.__getitem__(idx)
 
         # Check if there are tokens
@@ -312,9 +304,7 @@ class TrainingDataset(torch.utils.data.Dataset):
                 binder_pocket_sampling_geometric_p=self.binder_pocket_sampling_geometric_p,
             )
         except Exception as e:
-            print(
-                f"Featurizer failed on {sample.record.id} with error {e}. Skipping."
-            )
+            print(f"Featurizer failed on {sample.record.id} with error {e}. Skipping.")
             return self.__getitem__(idx)
 
         return features
@@ -363,9 +353,7 @@ class ValidationDataset(torch.utils.data.Dataset):
         self.max_seqs = max_seqs
         self.seed = seed
         self.symmetries = symmetries
-        self.random = (
-            np.random if overfit else np.random.RandomState(self.seed)
-        )
+        self.random = np.random if overfit else np.random.RandomState(self.seed)
         self.pad_to_max_tokens = pad_to_max_tokens
         self.pad_to_max_atoms = pad_to_max_atoms
         self.pad_to_max_seqs = pad_to_max_seqs
@@ -407,13 +395,9 @@ class ValidationDataset(torch.utils.data.Dataset):
 
         # Get the structure
         try:
-            input_data = load_input(
-                record, dataset.target_dir, dataset.msa_dir
-            )
+            input_data = load_input(record, dataset.target_dir, dataset.msa_dir)
         except Exception as e:
-            print(
-                f"Failed to load input for {record.id} with error {e}. Skipping."
-            )
+            print(f"Failed to load input for {record.id} with error {e}. Skipping.")
             return self.__getitem__(0)
 
         # Tokenize structure
@@ -465,9 +449,7 @@ class ValidationDataset(torch.utils.data.Dataset):
                 only_ligand_binder_pocket=True,
             )
         except Exception as e:
-            print(
-                f"Featurizer failed on {record.id} with error {e}. Skipping."
-            )
+            print(f"Featurizer failed on {record.id} with error {e}. Skipping.")
             return self.__getitem__(0)
 
         return features
@@ -482,9 +464,7 @@ class ValidationDataset(torch.utils.data.Dataset):
 
         """
         if self.overfit is not None:
-            length = sum(
-                len(d.manifest.records[: self.overfit]) for d in self.datasets
-            )
+            length = sum(len(d.manifest.records[: self.overfit]) for d in self.datasets)
         else:
             length = sum(len(d.manifest.records) for d in self.datasets)
 
@@ -506,9 +486,7 @@ class BoltzTrainingDataModule(pl.LightningDataModule):
         super().__init__()
         self.cfg = cfg
 
-        assert self.cfg.val_batch_size == 1, (
-            "Validation only works with batch size=1."
-        )
+        assert self.cfg.val_batch_size == 1, "Validation only works with batch size=1."
 
         # Load symmetries
         symmetries = get_symmetries(cfg.symmetries)

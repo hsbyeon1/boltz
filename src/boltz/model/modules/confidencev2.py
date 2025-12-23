@@ -86,9 +86,7 @@ class ConfidenceModule(nn.Module):
             )
             self.bond_type_feature = bond_type_feature
             if bond_type_feature:
-                self.token_bonds_type = nn.Embedding(
-                    len(const.bond_types) + 1, token_z
-                )
+                self.token_bonds_type = nn.Embedding(len(const.bond_types) + 1, token_z)
 
             self.contact_conditioning = ContactConditioning(
                 token_z=token_z,
@@ -143,19 +141,14 @@ class ConfidenceModule(nn.Module):
             out_dict = {}
             for key in out_dicts[0]:
                 if key != "pair_chains_iptm":
-                    out_dict[key] = torch.cat(
-                        [out[key] for out in out_dicts], dim=0
-                    )
+                    out_dict[key] = torch.cat([out[key] for out in out_dicts], dim=0)
                 else:
                     pair_chains_iptm = {}
                     for chain_idx1 in out_dicts[0][key]:
                         chains_iptm = {}
                         for chain_idx2 in out_dicts[0][key][chain_idx1]:
                             chains_iptm[chain_idx2] = torch.cat(
-                                [
-                                    out[key][chain_idx1][chain_idx2]
-                                    for out in out_dicts
-                                ],
+                                [out[key][chain_idx1][chain_idx2] for out in out_dicts],
                                 dim=0,
                             )
                         pair_chains_iptm[chain_idx1] = chains_iptm
@@ -196,9 +189,7 @@ class ConfidenceModule(nn.Module):
         s_inputs = s_inputs.repeat_interleave(multiplicity, 0)
 
         token_to_rep_atom = feats["token_to_rep_atom"]
-        token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-            multiplicity, 0
-        )
+        token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0)
         if len(x_pred.shape) == 4:
             B, mult, N, _ = x_pred.shape
             x_pred = x_pred.reshape(B * mult, N, -1)
@@ -294,20 +285,16 @@ class ConfidenceHeads(nn.Module):
     ):
         if self.use_separate_heads:
             asym_id_token = feats["asym_id"]
-            is_same_chain = asym_id_token.unsqueeze(
-                -1
-            ) == asym_id_token.unsqueeze(-2)
+            is_same_chain = asym_id_token.unsqueeze(-1) == asym_id_token.unsqueeze(-2)
             is_different_chain = ~is_same_chain
 
         if self.use_separate_heads:
             pae_intra_logits = self.to_pae_intra_logits(z)
-            pae_intra_logits = (
-                pae_intra_logits * is_same_chain.float().unsqueeze(-1)
-            )
+            pae_intra_logits = pae_intra_logits * is_same_chain.float().unsqueeze(-1)
 
             pae_inter_logits = self.to_pae_inter_logits(z)
-            pae_inter_logits = (
-                pae_inter_logits * is_different_chain.float().unsqueeze(-1)
+            pae_inter_logits = pae_inter_logits * is_different_chain.float().unsqueeze(
+                -1
             )
 
             pae_logits = pae_inter_logits + pae_intra_logits
@@ -316,13 +303,11 @@ class ConfidenceHeads(nn.Module):
 
         if self.use_separate_heads:
             pde_intra_logits = self.to_pde_intra_logits(z + z.transpose(1, 2))
-            pde_intra_logits = (
-                pde_intra_logits * is_same_chain.float().unsqueeze(-1)
-            )
+            pde_intra_logits = pde_intra_logits * is_same_chain.float().unsqueeze(-1)
 
             pde_inter_logits = self.to_pde_inter_logits(z + z.transpose(1, 2))
-            pde_inter_logits = (
-                pde_inter_logits * is_different_chain.float().unsqueeze(-1)
+            pde_inter_logits = pde_inter_logits * is_different_chain.float().unsqueeze(
+                -1
             )
 
             pde_logits = pde_inter_logits + pde_intra_logits
@@ -337,31 +322,22 @@ class ConfidenceHeads(nn.Module):
 
         token_type = feats["mol_type"]
         token_type = token_type.repeat_interleave(multiplicity, 0)
-        is_ligand_token = (
-            token_type == const.chain_type_ids["NONPOLYMER"]
-        ).float()
+        is_ligand_token = (token_type == const.chain_type_ids["NONPOLYMER"]).float()
 
         if self.token_level_confidence:
             plddt = compute_aggregated_metric(plddt_logits)
-            token_pad_mask = feats["token_pad_mask"].repeat_interleave(
-                multiplicity, 0
-            )
-            complex_plddt = (plddt * token_pad_mask).sum(
+            token_pad_mask = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
+            complex_plddt = (plddt * token_pad_mask).sum(dim=-1) / token_pad_mask.sum(
                 dim=-1
-            ) / token_pad_mask.sum(dim=-1)
+            )
 
             is_contact = (d < 8).float()
             is_different_chain = (
-                feats["asym_id"].unsqueeze(-1)
-                != feats["asym_id"].unsqueeze(-2)
+                feats["asym_id"].unsqueeze(-1) != feats["asym_id"].unsqueeze(-2)
             ).float()
-            is_different_chain = is_different_chain.repeat_interleave(
-                multiplicity, 0
-            )
+            is_different_chain = is_different_chain.repeat_interleave(multiplicity, 0)
             token_interface_mask = torch.max(
-                is_contact
-                * is_different_chain
-                * (1 - is_ligand_token).unsqueeze(-1),
+                is_contact * is_different_chain * (1 - is_ligand_token).unsqueeze(-1),
                 dim=-1,
             ).values
             token_non_interface_mask = (1 - token_interface_mask) * (
@@ -389,8 +365,7 @@ class ConfidenceHeads(nn.Module):
                 .to(resolved_logits.device)
             )
             max_num_atoms_mask = (
-                feats["atom_to_token"].sum(1).unsqueeze(-1)
-                > arange_max_num_atoms
+                feats["atom_to_token"].sum(1).unsqueeze(-1) > arange_max_num_atoms
             )
             resolved_logits = resolved_logits[:, max_num_atoms_mask.squeeze(0)]
             resolved_logits = pad(
@@ -406,9 +381,7 @@ class ConfidenceHeads(nn.Module):
                 ),
                 value=0,
             )
-            plddt_logits = plddt_logits.reshape(
-                B, N, self.max_num_atoms_per_token, -1
-            )
+            plddt_logits = plddt_logits.reshape(B, N, self.max_num_atoms_per_token, -1)
             plddt_logits = plddt_logits[:, max_num_atoms_mask.squeeze(0)]
             plddt_logits = pad(
                 plddt_logits,
@@ -423,23 +396,17 @@ class ConfidenceHeads(nn.Module):
                 ),
                 value=0,
             )
-            atom_pad_mask = feats["atom_pad_mask"].repeat_interleave(
-                multiplicity, 0
-            )
+            atom_pad_mask = feats["atom_pad_mask"].repeat_interleave(multiplicity, 0)
             plddt = compute_aggregated_metric(plddt_logits)
 
-            complex_plddt = (plddt * atom_pad_mask).sum(
+            complex_plddt = (plddt * atom_pad_mask).sum(dim=-1) / atom_pad_mask.sum(
                 dim=-1
-            ) / atom_pad_mask.sum(dim=-1)
+            )
             token_type = feats["mol_type"].float()
             atom_to_token = feats["atom_to_token"].float()
             chain_id_token = feats["asym_id"].float()
-            atom_type = torch.bmm(
-                atom_to_token, token_type.unsqueeze(-1)
-            ).squeeze(-1)
-            is_ligand_atom = (
-                atom_type == const.chain_type_ids["NONPOLYMER"]
-            ).float()
+            atom_type = torch.bmm(atom_to_token, token_type.unsqueeze(-1)).squeeze(-1)
+            is_ligand_atom = (atom_type == const.chain_type_ids["NONPOLYMER"]).float()
             d_atom = torch.cdist(x_pred, x_pred)
             is_contact = (d_atom < 8).float()
             chain_id_atom = torch.bmm(
@@ -450,39 +417,31 @@ class ConfidenceHeads(nn.Module):
             ).float()
 
             atom_interface_mask = torch.max(
-                is_contact
-                * is_different_chain
-                * (1 - is_ligand_atom).unsqueeze(-1),
+                is_contact * is_different_chain * (1 - is_ligand_atom).unsqueeze(-1),
                 dim=-1,
             ).values
-            atom_non_interface_mask = (1 - atom_interface_mask) * (
-                1 - is_ligand_atom
-            )
+            atom_non_interface_mask = (1 - atom_interface_mask) * (1 - is_ligand_atom)
             iplddt_weight = (
                 is_ligand_atom * ligand_weight
                 + atom_interface_mask * interface_weight
                 + atom_non_interface_mask * non_interface_weight
             )
 
-            complex_iplddt = (
-                plddt * feats["atom_pad_mask"] * iplddt_weight
-            ).sum(dim=-1) / torch.sum(
-                feats["atom_pad_mask"] * iplddt_weight, dim=-1
-            )
+            complex_iplddt = (plddt * feats["atom_pad_mask"] * iplddt_weight).sum(
+                dim=-1
+            ) / torch.sum(feats["atom_pad_mask"] * iplddt_weight, dim=-1)
 
         # Compute the gPDE and giPDE
         pde = compute_aggregated_metric(pde_logits, end=32)
         pred_distogram_prob = nn.functional.softmax(
             pred_distogram_logits, dim=-1
         ).repeat_interleave(multiplicity, 0)
-        contacts = torch.zeros(
-            (1, 1, 1, 64), dtype=pred_distogram_prob.dtype
-        ).to(pred_distogram_prob.device)
+        contacts = torch.zeros((1, 1, 1, 64), dtype=pred_distogram_prob.dtype).to(
+            pred_distogram_prob.device
+        )
         contacts[:, :, :, :20] = 1.0
         prob_contact = (pred_distogram_prob * contacts).sum(-1)
-        token_pad_mask = feats["token_pad_mask"].repeat_interleave(
-            multiplicity, 0
-        )
+        token_pad_mask = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
         token_pad_pair_mask = (
             token_pad_mask.unsqueeze(-1)
             * token_pad_mask.unsqueeze(-2)
@@ -494,9 +453,9 @@ class ConfidenceHeads(nn.Module):
             )
         )
         token_pair_mask = token_pad_pair_mask * prob_contact
-        complex_pde = (pde * token_pair_mask).sum(
+        complex_pde = (pde * token_pair_mask).sum(dim=(1, 2)) / token_pair_mask.sum(
             dim=(1, 2)
-        ) / token_pair_mask.sum(dim=(1, 2))
+        )
         asym_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
         token_interface_pair_mask = token_pair_mask * (
             asym_id.unsqueeze(-1) != asym_id.unsqueeze(-2)
@@ -519,8 +478,8 @@ class ConfidenceHeads(nn.Module):
         out_dict["pae"] = compute_aggregated_metric(pae_logits, end=32)
 
         try:
-            ptm, iptm, ligand_iptm, protein_iptm, pair_chains_iptm = (
-                compute_ptms(pae_logits, x_pred, feats, multiplicity)
+            ptm, iptm, ligand_iptm, protein_iptm, pair_chains_iptm = compute_ptms(
+                pae_logits, x_pred, feats, multiplicity
             )
             out_dict["ptm"] = ptm
             out_dict["iptm"] = iptm

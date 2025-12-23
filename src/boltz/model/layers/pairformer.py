@@ -93,9 +93,7 @@ class PairformerLayer(nn.Module):
             use_kernels=use_cuequiv_attn or use_kernels,
         )
 
-        dropout = get_dropout_mask(
-            self.dropout, z, self.training, columnwise=True
-        )
+        dropout = get_dropout_mask(self.dropout, z, self.training, columnwise=True)
         z = z + dropout * self.tri_att_end(
             z,
             mask=pair_mask,
@@ -201,9 +199,7 @@ class PairformerModule(nn.Module):
                     use_kernels,
                 )
             else:
-                s, z = layer(
-                    s, z, mask, pair_mask, chunk_size_tri_attn, use_kernels
-                )
+                s, z = layer(s, z, mask, pair_mask, chunk_size_tri_attn, use_kernels)
         return s, z
 
 
@@ -263,9 +259,7 @@ class PairformerNoSeqLayer(nn.Module):
             use_kernels=use_cuequiv_attn or use_kernels,
         )
 
-        dropout = get_dropout_mask(
-            self.dropout, z, self.training, columnwise=True
-        )
+        dropout = get_dropout_mask(self.dropout, z, self.training, columnwise=True)
         z = z + dropout * self.tri_att_end(
             z,
             mask=pair_mask,

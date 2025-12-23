@@ -112,9 +112,7 @@ def resolved_loss(
 
     # extract necessary features
     token_to_rep_atom = feats["token_to_rep_atom"]
-    token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-        multiplicity, 0
-    ).float()
+    token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0).float()
     ref_mask = torch.bmm(
         token_to_rep_atom, true_coords_resolved_mask.unsqueeze(-1).float()
     ).squeeze(-1)
@@ -122,16 +120,12 @@ def resolved_loss(
     pad_mask = pad_mask.repeat_interleave(multiplicity, 0).float()
 
     # compute loss
-    log_softmax_resolved = torch.nn.functional.log_softmax(
-        pred_resolved, dim=-1
-    )
+    log_softmax_resolved = torch.nn.functional.log_softmax(pred_resolved, dim=-1)
     errors = (
         -ref_mask * log_softmax_resolved[:, :, 0]
         - (1 - ref_mask) * log_softmax_resolved[:, :, 1]
     )
-    loss = torch.sum(errors * pad_mask, dim=-1) / (
-        1e-7 + torch.sum(pad_mask, dim=-1)
-    )
+    loss = torch.sum(errors * pad_mask, dim=-1) / (1e-7 + torch.sum(pad_mask, dim=-1))
 
     # Average over the batch dimension
     loss = torch.mean(loss)
@@ -175,15 +169,13 @@ def plddt_loss(
     atom_mask = true_coords_resolved_mask
 
     R_set_to_rep_atom = feats["r_set_to_rep_atom"]
-    R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(
-        multiplicity, 0
-    ).float()
+    R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(multiplicity, 0).float()
 
     token_type = feats["mol_type"]
     token_type = token_type.repeat_interleave(multiplicity, 0)
-    is_nucleotide_token = (
-        token_type == const.chain_type_ids["DNA"]
-    ).float() + (token_type == const.chain_type_ids["RNA"]).float()
+    is_nucleotide_token = (token_type == const.chain_type_ids["DNA"]).float() + (
+        token_type == const.chain_type_ids["RNA"]
+    ).float()
 
     B = true_atom_coords.shape[0]
 
@@ -210,9 +202,7 @@ def plddt_loss(
     pair_mask = atom_mask.unsqueeze(-1) * atom_mask.unsqueeze(-2)
     pair_mask = (
         pair_mask
-        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[
-            None, :, :
-        ]
+        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[None, :, :]
     )
     pair_mask = torch.einsum("bnm,bkm->bnk", pair_mask, R_set_to_rep_atom)
     pair_mask = torch.bmm(token_to_rep_atom, pair_mask)
@@ -285,9 +275,7 @@ def pde_loss(
 
     # extract necessary features
     token_to_rep_atom = feats["token_to_rep_atom"]
-    token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-        multiplicity, 0
-    ).float()
+    token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0).float()
     token_mask = torch.bmm(
         token_to_rep_atom, true_coords_resolved_mask.unsqueeze(-1).float()
     ).squeeze(-1)
@@ -373,9 +361,7 @@ def pae_loss(
     )
     # Compute token coords in true frames
     B, N, _ = true_atom_coords.shape
-    true_atom_coords = true_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    true_atom_coords = true_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     true_coords_transformed = express_coordinate_in_frame(
         true_atom_coords,
         frame_true_atom_a,
@@ -394,9 +380,7 @@ def pae_loss(
     )
     # Compute token coords in pred frames
     B, N, _ = pred_atom_coords.shape
-    pred_atom_coords = pred_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    pred_atom_coords = pred_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     pred_coords_transformed = express_coordinate_in_frame(
         pred_atom_coords,
         frame_pred_atom_a,
@@ -405,8 +389,7 @@ def pae_loss(
     )
 
     target_pae = torch.sqrt(
-        ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1)
-        + 1e-8
+        ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1) + 1e-8
     )
 
     # Compute mask for the pae loss
@@ -433,9 +416,7 @@ def pae_loss(
     pae_one_hot = nn.functional.one_hot(bin_index, num_classes=num_bins)
     errors = -1 * torch.sum(
         pae_one_hot
-        * torch.nn.functional.log_softmax(
-            pred_pae.reshape(pae_one_hot.shape), dim=-1
-        ),
+        * torch.nn.functional.log_softmax(pred_pae.reshape(pae_one_hot.shape), dim=-1),
         dim=-1,
     )
     loss = torch.sum(errors * pair_mask, dim=(-2, -1)) / (
@@ -468,21 +449,15 @@ def lddt_dist(dmat_predicted, dmat_true, mask, cutoff=15.0, per_atom=False):
         return score, mask_no_match.float()
     else:
         norm = 1.0 / (1e-10 + torch.sum(dists_to_score, dim=(-2, -1)))
-        score = norm * (
-            1e-10 + torch.sum(dists_to_score * score, dim=(-2, -1))
-        )
+        score = norm * (1e-10 + torch.sum(dists_to_score * score, dim=(-2, -1)))
         total = torch.sum(dists_to_score, dim=(-1, -2))
         return score, total
 
 
-def express_coordinate_in_frame(
-    atom_coords, frame_atom_a, frame_atom_b, frame_atom_c
-):
+def express_coordinate_in_frame(atom_coords, frame_atom_a, frame_atom_b, frame_atom_c):
     batch, multiplicity = atom_coords.shape[0], atom_coords.shape[1]
     batch_indices0 = torch.arange(batch)[:, None, None].to(atom_coords.device)
-    batch_indices1 = torch.arange(multiplicity)[None, :, None].to(
-        atom_coords.device
-    )
+    batch_indices1 = torch.arange(multiplicity)[None, :, None].to(atom_coords.device)
 
     # extract frame atoms
     a, b, c = (
@@ -537,9 +512,7 @@ def compute_frame_pred(
         feats["atom_to_token"].float(), asym_id_token.unsqueeze(-1).float()
     ).squeeze(-1)
     B, N, _ = pred_atom_coords.shape
-    pred_atom_coords = pred_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    pred_atom_coords = pred_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     frames_idx_pred = (
         frames_idx_true.clone()
         .repeat_interleave(multiplicity, 0)
@@ -551,17 +524,12 @@ def compute_frame_pred(
         token_idx = 0
         atom_idx = 0
         for id in torch.unique(asym_id_token[i]):
-            mask_chain_token = (asym_id_token[i] == id) * feats[
-                "token_pad_mask"
-            ][i]
-            mask_chain_atom = (asym_id_atom[i] == id) * feats["atom_pad_mask"][
-                i
-            ]
+            mask_chain_token = (asym_id_token[i] == id) * feats["token_pad_mask"][i]
+            mask_chain_atom = (asym_id_atom[i] == id) * feats["atom_pad_mask"][i]
             num_tokens = int(mask_chain_token.sum().item())
             num_atoms = int(mask_chain_atom.sum().item())
             if (
-                feats["mol_type"][i, token_idx]
-                != const.chain_type_ids["NONPOLYMER"]
+                feats["mol_type"][i, token_idx] != const.chain_type_ids["NONPOLYMER"]
                 or num_atoms < 3
             ):
                 token_idx += num_tokens
@@ -579,9 +547,7 @@ def compute_frame_pred(
             if inference:
                 resolved_pair = 1 - (
                     feats["atom_pad_mask"][i][mask_chain_atom.bool()][None, :]
-                    * feats["atom_pad_mask"][i][mask_chain_atom.bool()][
-                        :, None
-                    ]
+                    * feats["atom_pad_mask"][i][mask_chain_atom.bool()][:, None]
                 ).to(torch.float32)
                 resolved_pair[resolved_pair == 1] = torch.inf
                 indices = torch.sort(dist_mat + resolved_pair, axis=2).indices
@@ -607,9 +573,7 @@ def compute_frame_pred(
                 )
                 + atom_idx
             )
-            frames_idx_pred[i, :, token_idx : token_idx + num_atoms, :] = (
-                frames
-            )
+            frames_idx_pred[i, :, token_idx : token_idx + num_atoms, :] = frames
             token_idx += num_tokens
             atom_idx += num_atoms
 
@@ -630,6 +594,4 @@ def compute_frame_pred(
         frames_expanded[:, 1] - frames_expanded[:, 2],
     ).reshape(B // multiplicity, multiplicity, -1)
 
-    return frames_idx_pred, mask_collinear_pred * feats["token_pad_mask"][
-        :, None, :
-    ]
+    return frames_idx_pred, mask_collinear_pred * feats["token_pad_mask"][:, None, :]

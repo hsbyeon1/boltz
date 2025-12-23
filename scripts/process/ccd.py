@@ -73,9 +73,7 @@ def compute_3d(mol: Mol, version: str = "v3") -> bool:
 
     try:
         conf_id = rdkit.Chem.AllChem.EmbedMolecule(mol, options)
-        rdkit.Chem.AllChem.UFFOptimizeMolecule(
-            mol, confId=conf_id, maxIters=1000
-        )
+        rdkit.Chem.AllChem.UFFOptimizeMolecule(mol, confId=conf_id, maxIters=1000)
 
     except RuntimeError:
         pass  # Force field issue here
@@ -156,9 +154,7 @@ def compute_symmetries(mol: Mol) -> list[list[int]]:
     for raw_permutation in raw_permutations:
         # Filter out permutations with leaving atoms
         try:
-            if {raw_permutation[idx] for idx in idx_map} == set(
-                idx_map.keys()
-            ):
+            if {raw_permutation[idx] for idx in idx_map} == set(idx_map.keys()):
                 permutation = [
                     idx_map[idx] for idx in raw_permutation if idx in idx_map
                 ]
@@ -222,9 +218,7 @@ def process(mol: Mol, output: str) -> tuple[str, str]:
 def main(args: argparse.Namespace) -> None:
     """Process conformers."""
     # Set property saving
-    rdkit.Chem.SetDefaultPickleProperties(
-        rdkit.Chem.PropertyPickleOptions.AllProps
-    )
+    rdkit.Chem.SetDefaultPickleProperties(rdkit.Chem.PropertyPickleOptions.AllProps)
 
     # Load components
     print("Loading components")  # noqa: T201
@@ -250,9 +244,7 @@ def main(args: argparse.Namespace) -> None:
 
     # Check if we can run in parallel
     max_processes = multiprocessing.cpu_count()
-    num_processes = max(
-        1, min(args.num_processes, max_processes, len(molecules))
-    )
+    num_processes = max(1, min(args.num_processes, max_processes, len(molecules)))
     parallel = num_processes > 1
 
     if parallel:

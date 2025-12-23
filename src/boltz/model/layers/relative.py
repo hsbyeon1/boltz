@@ -43,9 +43,7 @@ def compute_relative_distribution_perfect_correlation(
                     cumulative_1[..., 1 + i :],
                     cumulative_2[..., 1 : K + 1 - i],
                 )
-                - torch.maximum(
-                    cumulative_1[..., i:-1], cumulative_2[..., : K - i]
-                ),
+                - torch.maximum(cumulative_1[..., i:-1], cumulative_2[..., : K - i]),
             )
         )
 
@@ -56,9 +54,7 @@ def compute_relative_distribution_perfect_correlation(
                     cumulative_2[..., 1 + i :],
                     cumulative_1[..., 1 : K + 1 - i],
                 )
-                - torch.maximum(
-                    cumulative_2[..., i:-1], cumulative_1[..., : K - i]
-                ),
+                - torch.maximum(cumulative_2[..., i:-1], cumulative_1[..., : K - i]),
             )
         )
 

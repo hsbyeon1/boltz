@@ -5,7 +5,7 @@ import os
 import random
 import tarfile
 import time
-from typing import Optional, Union, Dict
+from typing import Dict, Optional, Union
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -13,7 +13,9 @@ from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-TQDM_BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt} [elapsed: {elapsed} remaining: {remaining}]"
+TQDM_BAR_FORMAT = (
+    "{l_bar}{bar}| {n_fmt}/{total_fmt} [elapsed: {elapsed} remaining: {remaining}]"
+)
 
 
 def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
@@ -52,9 +54,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
         )
     elif has_header_auth:
         headers.update(auth_headers)
-        logger.debug(
-            "MMSeqs2 server authentication: using header-based authentication"
-        )
+        logger.debug("MMSeqs2 server authentication: using header-based authentication")
     else:
         logger.debug("MMSeqs2 server authentication: no credentials provided")
 
@@ -85,9 +85,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
                     headers=headers,
                     auth=auth,
                 )
-                logger.debug(
-                    f"MSA submission response status: {res.status_code}"
-                )
+                logger.debug(f"MSA submission response status: {res.status_code}")
             except Exception as e:
                 error_count += 1
                 logger.warning(
@@ -120,9 +118,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
                     headers=headers,
                     auth=auth,
                 )
-                logger.debug(
-                    f"MSA status check response status: {res.status_code}"
-                )
+                logger.debug(f"MSA status check response status: {res.status_code}")
             except Exception as e:
                 error_count += 1
                 logger.warning(
@@ -154,9 +150,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
                     headers=headers,
                     auth=auth,
                 )
-                logger.debug(
-                    f"MSA download response status: {res.status_code}"
-                )
+                logger.debug(f"MSA download response status: {res.status_code}")
             except Exception as e:
                 error_count += 1
                 logger.warning(
@@ -217,9 +211,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
                 out = submit(seqs_unique, mode, N)
                 while out["status"] in ["UNKNOWN", "RATELIMIT"]:
                     sleep_time = 5 + random.randint(0, 5)
-                    logger.error(
-                        f"Sleeping for {sleep_time}s. Reason: {out['status']}"
-                    )
+                    logger.error(f"Sleeping for {sleep_time}s. Reason: {out['status']}")
                     # resubmit
                     time.sleep(sleep_time)
                     out = submit(seqs_unique, mode, N)
@@ -254,9 +246,7 @@ def run_mmseqs2(  # noqa: PLR0912, D103, C901, PLR0915
                         pbar.update(n=t)
 
                 if out["status"] == "COMPLETE":
-                    logger.debug(
-                        f"MSA job completed successfully for ID: {ID}"
-                    )
+                    logger.debug(f"MSA job completed successfully for ID: {ID}")
                     if TIME < TIME_ESTIMATE:
                         pbar.update(n=(TIME_ESTIMATE - TIME))
                     REDO = False

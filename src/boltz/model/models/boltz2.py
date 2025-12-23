@@ -189,9 +189,7 @@ class Boltz2(LightningModule):
         self.token_bonds = nn.Linear(1, token_z, bias=False)
         self.bond_type_feature = bond_type_feature
         if bond_type_feature:
-            self.token_bonds_type = nn.Embedding(
-                len(const.bond_types) + 1, token_z
-            )
+            self.token_bonds_type = nn.Embedding(len(const.bond_types) + 1, token_z)
 
         self.contact_conditioning = ContactConditioning(
             token_z=token_z,
@@ -218,9 +216,7 @@ class Boltz2(LightningModule):
         self.use_templates = use_templates
         if use_templates:
             if use_templates_v2:
-                self.template_module = TemplateV2Module(
-                    token_z, **template_args
-                )
+                self.template_module = TemplateV2Module(token_z, **template_args)
             else:
                 self.template_module = TemplateModule(token_z, **template_args)
             if compile_templates:
@@ -243,9 +239,7 @@ class Boltz2(LightningModule):
                 dynamic=False,
                 fullgraph=False,
             )
-        self.pairformer_module = PairformerModule(
-            token_s, token_z, **pairformer_args
-        )
+        self.pairformer_module = PairformerModule(token_s, token_z, **pairformer_args)
         if compile_pairformer:
             self.is_pairformer_compiled = True
             self.pairformer_module = torch.compile(
@@ -254,9 +248,7 @@ class Boltz2(LightningModule):
                 fullgraph=False,
             )
 
-        self.checkpoint_diffusion_conditioning = (
-            checkpoint_diffusion_conditioning
-        )
+        self.checkpoint_diffusion_conditioning = checkpoint_diffusion_conditioning
         self.diffusion_conditioning = DiffusionConditioning(
             token_s=token_s,
             token_z=token_z,
@@ -266,12 +258,8 @@ class Boltz2(LightningModule):
             atoms_per_window_keys=atoms_per_window_keys,
             atom_encoder_depth=score_model_args["atom_encoder_depth"],
             atom_encoder_heads=score_model_args["atom_encoder_heads"],
-            token_transformer_depth=score_model_args[
-                "token_transformer_depth"
-            ],
-            token_transformer_heads=score_model_args[
-                "token_transformer_heads"
-            ],
+            token_transformer_depth=score_model_args["token_transformer_depth"],
+            token_transformer_heads=score_model_args["token_transformer_heads"],
             atom_decoder_depth=score_model_args["atom_decoder_depth"],
             atom_decoder_heads=score_model_args["atom_decoder_heads"],
             atom_feature_dim=atom_feature_dim,
@@ -364,8 +352,7 @@ class Boltz2(LightningModule):
         if not structure_prediction_training:
             for name, param in self.named_parameters():
                 if (
-                    name.split(".")[0]
-                    not in ["confidence_module", "affinity_module"]
+                    name.split(".")[0] not in ["confidence_module", "affinity_module"]
                     and "out_token_feat_update" not in name
                 ):
                     param.requires_grad = False
@@ -374,8 +361,7 @@ class Boltz2(LightningModule):
         """Set the model for training, validation and inference."""
         if stage == "predict" and not (
             torch.cuda.is_available()
-            and torch.cuda.get_device_properties(torch.device("cuda")).major
-            >= 8.0  # noqa: PLR2004
+            and torch.cuda.get_device_properties(torch.device("cuda")).major >= 8.0  # noqa: PLR2004
         ):
             self.use_kernels = False
 
@@ -385,9 +371,7 @@ class Boltz2(LightningModule):
             and self.trainer.datamodule
             and self.validate_structure
         ):
-            self.val_group_mapper.update(
-                self.trainer.datamodule.val_group_mapper
-            )
+            self.val_group_mapper.update(self.trainer.datamodule.val_group_mapper)
 
             l1 = len(self.val_group_mapper)
             l2 = self.num_val_datasets
@@ -409,9 +393,7 @@ class Boltz2(LightningModule):
                         if val_name == val_group["label"]:
                             self.validator_mapper[val_idx] = validator
 
-            msg = (
-                "Mismatch between validator names and val_group_mapper values."
-            )
+            msg = "Mismatch between validator names and val_group_mapper values."
             assert set(all_validator_names) == {
                 x["label"] for x in self.val_group_mapper.values()
             }, msg
@@ -443,9 +425,7 @@ class Boltz2(LightningModule):
             z_init = z_init + relative_position_encoding
             z_init = z_init + self.token_bonds(feats["token_bonds"].float())
             if self.bond_type_feature:
-                z_init = z_init + self.token_bonds_type(
-                    feats["type_bonds"].long()
-                )
+                z_init = z_init + self.token_bonds_type(feats["type_bonds"].long())
             z_init = z_init + self.contact_conditioning(feats)
 
             # Perform rounds of the pairwise stack
@@ -477,9 +457,7 @@ class Boltz2(LightningModule):
                         # Compute pairwise stack
                         if self.use_templates:
                             if self.is_template_compiled and not self.training:
-                                template_module = (
-                                    self.template_module._orig_mod
-                                )  # noqa: SLF001
+                                template_module = self.template_module._orig_mod  # noqa: SLF001
                             else:
                                 template_module = self.template_module
 
@@ -501,9 +479,7 @@ class Boltz2(LightningModule):
 
                         # Revert to uncompiled version for validation
                         if self.is_pairformer_compiled and not self.training:
-                            pairformer_module = (
-                                self.pairformer_module._orig_mod
-                            )  # noqa: SLF001
+                            pairformer_module = self.pairformer_module._orig_mod  # noqa: SLF001
                         else:
                             pairformer_module = self.pairformer_module
 
@@ -594,12 +570,9 @@ class Boltz2(LightningModule):
             if self.training and self.structure_prediction_training:
                 atom_coords = feats["coords"]
                 B, K, L = atom_coords.shape[0:3]
-                assert (
-                    K
-                    in (
-                        multiplicity_diffusion_train,
-                        1,
-                    )
+                assert K in (
+                    multiplicity_diffusion_train,
+                    1,
                 )  # TODO make check somewhere else, expand to m % N == 0, m > N
                 atom_coords = atom_coords.reshape(B * K, L, 3)
                 atom_coords = atom_coords.repeat_interleave(
@@ -631,9 +604,7 @@ class Boltz2(LightningModule):
                     x_pred=(
                         dict_out["sample_atom_coords"].detach()
                         if not self.skip_run_structure
-                        else feats["coords"].repeat_interleave(
-                            diffusion_samples, 0
-                        )
+                        else feats["coords"].repeat_interleave(diffusion_samples, 0)
                     ),
                     feats=feats,
                     pred_distogram_logits=(
@@ -662,9 +633,9 @@ class Boltz2(LightningModule):
 
             argsort = torch.argsort(dict_out["iptm"], descending=True)
             best_idx = argsort[0].item()
-            coords_affinity = dict_out["sample_atom_coords"].detach()[
-                best_idx
-            ][None, None]
+            coords_affinity = dict_out["sample_atom_coords"].detach()[best_idx][
+                None, None
+            ]
             s_inputs = self.input_embedder(feats, affinity=True)
 
             with torch.autocast("cuda", enabled=False):
@@ -795,22 +766,16 @@ class Boltz2(LightningModule):
                         )
                     )
                     true_coords.append(best_true_coords)
-                    true_coords_resolved_mask.append(
-                        best_true_coords_resolved_mask
-                    )
+                    true_coords_resolved_mask.append(best_true_coords_resolved_mask)
 
             true_coords = torch.cat(true_coords, dim=0)
-            true_coords_resolved_mask = torch.cat(
-                true_coords_resolved_mask, dim=0
-            )
+            true_coords_resolved_mask = torch.cat(true_coords_resolved_mask, dim=0)
             true_coords = true_coords.unsqueeze(1)
 
             true_coords_resolved_mask = true_coords_resolved_mask
 
             return_dict["true_coords"] = true_coords
-            return_dict["true_coords_resolved_mask"] = (
-                true_coords_resolved_mask
-            )
+            return_dict["true_coords_resolved_mask"] = true_coords_resolved_mask
             return_dict["rmsds"] = 0
             return_dict["best_rmsd_recall"] = 0
 
@@ -820,31 +785,25 @@ class Boltz2(LightningModule):
             true_coords_resolved_mask = batch["atom_resolved_mask"]
             true_coords = batch["coords"].squeeze(0)
             if expand_to_diffusion_samples:
-                true_coords = true_coords.repeat(
-                    (diffusion_samples, 1, 1)
-                ).reshape(diffusion_samples, K, L, 3)
+                true_coords = true_coords.repeat((diffusion_samples, 1, 1)).reshape(
+                    diffusion_samples, K, L, 3
+                )
 
                 true_coords_resolved_mask = true_coords_resolved_mask.repeat_interleave(
                     diffusion_samples, dim=0
                 )  # since all masks are the same across conformers and diffusion samples, can just repeat S times
             else:
-                true_coords_resolved_mask = true_coords_resolved_mask.squeeze(
-                    0
-                )
+                true_coords_resolved_mask = true_coords_resolved_mask.squeeze(0)
 
             return_dict["true_coords"] = true_coords
-            return_dict["true_coords_resolved_mask"] = (
-                true_coords_resolved_mask
-            )
+            return_dict["true_coords_resolved_mask"] = true_coords_resolved_mask
             return_dict["rmsds"] = 0
             return_dict["best_rmsd_recall"] = 0
             return_dict["best_rmsd_precision"] = 0
 
         return return_dict
 
-    def training_step(
-        self, batch: dict[str, Tensor], batch_idx: int
-    ) -> Tensor:
+    def training_step(self, batch: dict[str, Tensor], batch_idx: int) -> Tensor:
         # Sample recycling steps
         if self.no_random_recycling_training:
             recycling_steps = self.training_args.recycling_steps
@@ -909,15 +868,11 @@ class Boltz2(LightningModule):
                     symmetry_correction=self.training_args.symmetry_correction,
                 )
             except Exception as e:
-                print(
-                    f"Skipping batch with id {batch['pdb_id']} due to error: {e}"
-                )
+                print(f"Skipping batch with id {batch['pdb_id']} due to error: {e}")
                 return None
 
             true_coords = return_dict["true_coords"]
-            true_coords_resolved_mask = return_dict[
-                "true_coords_resolved_mask"
-            ]
+            true_coords_resolved_mask = return_dict["true_coords_resolved_mask"]
 
             # TODO remove once multiple conformers are supported
             K = true_coords.shape[1]
@@ -930,9 +885,9 @@ class Boltz2(LightningModule):
             batch["frames_idx"] = batch["frames_idx"].squeeze(
                 1
             )  # remove conformer dimension
-            batch["frame_resolved_mask"] = batch[
-                "frame_resolved_mask"
-            ].squeeze(1)  # remove conformer dimension
+            batch["frame_resolved_mask"] = batch["frame_resolved_mask"].squeeze(
+                1
+            )  # remove conformer dimension
 
             confidence_loss_dict = confidence_loss(
                 out,
@@ -954,10 +909,8 @@ class Boltz2(LightningModule):
         # NOTE: we already have an implicit weight in the losses induced by dataset sampling
         # NOTE: this logic works only for datasets with confidence labels
         loss = (
-            self.training_args.confidence_loss_weight
-            * confidence_loss_dict["loss"]
-            + self.training_args.diffusion_loss_weight
-            * diffusion_loss_dict["loss"]
+            self.training_args.confidence_loss_weight * confidence_loss_dict["loss"]
+            + self.training_args.diffusion_loss_weight * diffusion_loss_dict["loss"]
             + self.training_args.distogram_loss_weight * disto_loss
             + self.training_args.get("bfactor_loss_weight", 0.0) * bfactor_loss
         )
@@ -1057,9 +1010,7 @@ class Boltz2(LightningModule):
         return norm
 
     def parameter_norm(self, module):
-        parameters = [
-            p.norm(p=2) ** 2 for p in module.parameters() if p.requires_grad
-        ]
+        parameters = [p.norm(p=2) ** 2 for p in module.parameters() if p.requires_grad]
         if len(parameters) == 0:
             return torch.tensor(
                 0.0, device="cuda" if torch.cuda.is_available() else "cpu"
@@ -1122,9 +1073,7 @@ class Boltz2(LightningModule):
                 # This will aggregate, compute and log all metrics
                 validator.on_epoch_end(model=self)
 
-    def predict_step(
-        self, batch: Any, batch_idx: int, dataloader_idx: int = 0
-    ) -> dict:
+    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> dict:
         try:
             out = self(
                 batch,
@@ -1181,15 +1130,11 @@ class Boltz2(LightningModule):
                     "affinity_probability_binary"
                 ]
                 if self.affinity_ensemble:
-                    pred_dict["affinity_pred_value1"] = out[
-                        "affinity_pred_value1"
-                    ]
+                    pred_dict["affinity_pred_value1"] = out["affinity_pred_value1"]
                     pred_dict["affinity_probability_binary1"] = out[
                         "affinity_probability_binary1"
                     ]
-                    pred_dict["affinity_pred_value2"] = out[
-                        "affinity_pred_value2"
-                    ]
+                    pred_dict["affinity_pred_value2"] = out["affinity_pred_value2"]
                     pred_dict["affinity_probability_binary2"] = out[
                         "affinity_probability_binary2"
                     ]
@@ -1217,9 +1162,7 @@ class Boltz2(LightningModule):
                 pn
                 for pn, p in self.named_parameters()
                 if p.requires_grad
-                and (
-                    "out_token_feat_update" in pn or "confidence_module" in pn
-                )
+                and ("out_token_feat_update" in pn or "confidence_module" in pn)
             ]
 
         if self.training_args.get("weight_decay", 0.0) > 0:
@@ -1238,9 +1181,7 @@ class Boltz2(LightningModule):
                         or "dist_bin_pairwise_embed" in pn
                     )
                 ]
-                nodecay_params = [
-                    param_dict[pn] for pn in nodecay_params_names
-                ]
+                nodecay_params = [param_dict[pn] for pn in nodecay_params_names]
                 decay_params = [
                     param_dict[pn]
                     for pn in all_parameter_names
@@ -1318,9 +1259,9 @@ class Boltz2(LightningModule):
             checkpoint["hyper_parameters"]["training_args"][
                 "diffusion_multiplicity"
             ] = self.training_args.diffusion_multiplicity
-            checkpoint["hyper_parameters"]["training_args"][
-                "recycling_steps"
-            ] = self.training_args.recycling_steps
+            checkpoint["hyper_parameters"]["training_args"]["recycling_steps"] = (
+                self.training_args.recycling_steps
+            )
             checkpoint["hyper_parameters"]["training_args"]["weight_decay"] = (
                 self.training_args.weight_decay
             )

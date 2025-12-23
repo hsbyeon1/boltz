@@ -72,18 +72,12 @@ class BoltzWriter(BasePredictionWriter):
 
         pad_masks = prediction["masks"]
 
-        distograms = (
-            prediction["pdistogram"].to("cpu", dtype=torch.float32).numpy()
-        )
+        distograms = prediction["pdistogram"].to("cpu", dtype=torch.float32).numpy()
 
         # Get ranking
         if "confidence_score" in prediction:
-            argsort = torch.argsort(
-                prediction["confidence_score"], descending=True
-            )
-            idx_to_rank = {
-                idx.item(): rank for rank, idx in enumerate(argsort)
-            }
+            argsort = torch.argsort(prediction["confidence_score"], descending=True)
+            idx_to_rank = {idx.item(): rank for rank, idx in enumerate(argsort)}
         # Handles cases where confidence summary is False
         else:
             idx_to_rank = {i: i for i in range(len(records))}
@@ -199,11 +193,7 @@ class BoltzWriter(BasePredictionWriter):
                     path = struct_dir / f"{outname}.npz"
                     np.savez_compressed(path, **asdict(new_structure))
 
-                if (
-                    self.boltz2
-                    and record.affinity
-                    and idx_to_rank[model_idx] == 0
-                ):
+                if self.boltz2 and record.affinity and idx_to_rank[model_idx] == 0:
                     path = struct_dir / f"pre_affinity_{record.id}.npz"
                     np.savez_compressed(path, **asdict(new_structure))
                     np.array(atoms["coords"][:, None], dtype=Coords)
@@ -226,13 +216,9 @@ class BoltzWriter(BasePredictionWriter):
                         "complex_pde",
                         "complex_ipde",
                     ]:
-                        confidence_summary_dict[key] = prediction[key][
-                            model_idx
-                        ].item()
+                        confidence_summary_dict[key] = prediction[key][model_idx].item()
                     confidence_summary_dict["chains_ptm"] = {
-                        idx: prediction["pair_chains_iptm"][idx][idx][
-                            model_idx
-                        ].item()
+                        idx: prediction["pair_chains_iptm"][idx][idx][model_idx].item()
                         for idx in prediction["pair_chains_iptm"]
                     }
                     confidence_summary_dict["pair_chains_iptm"] = {
@@ -279,11 +265,7 @@ class BoltzWriter(BasePredictionWriter):
                     np.savez_compressed(path, pde=pde.cpu().numpy())
 
             # Save embeddings
-            if (
-                self.write_embeddings
-                and "s" in prediction
-                and "z" in prediction
-            ):
+            if self.write_embeddings and "s" in prediction and "z" in prediction:
                 s = prediction["s"].cpu().numpy()
                 z = prediction["z"].cpu().numpy()
 
@@ -346,22 +328,14 @@ class BoltzAffinityWriter(BasePredictionWriter):
         }
         if "affinity_pred_value1" in prediction:
             pred_affinity_value1 = prediction["affinity_pred_value1"]
-            pred_affinity_probability1 = prediction[
-                "affinity_probability_binary1"
-            ]
+            pred_affinity_probability1 = prediction["affinity_probability_binary1"]
             pred_affinity_value2 = prediction["affinity_pred_value2"]
-            pred_affinity_probability2 = prediction[
-                "affinity_probability_binary2"
-            ]
-            affinity_summary["affinity_pred_value1"] = (
-                pred_affinity_value1.item()
-            )
+            pred_affinity_probability2 = prediction["affinity_probability_binary2"]
+            affinity_summary["affinity_pred_value1"] = pred_affinity_value1.item()
             affinity_summary["affinity_probability_binary1"] = (
                 pred_affinity_probability1.item()
             )
-            affinity_summary["affinity_pred_value2"] = (
-                pred_affinity_value2.item()
-            )
+            affinity_summary["affinity_pred_value2"] = pred_affinity_value2.item()
             affinity_summary["affinity_probability_binary2"] = (
                 pred_affinity_probability2.item()
             )

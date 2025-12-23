@@ -30,9 +30,7 @@ class Sampler(ABC):
     """Abstract base class for samplers."""
 
     @abstractmethod
-    def sample(
-        self, records: List[Record], random: RandomState
-    ) -> Iterator[Sample]:
+    def sample(self, records: List[Record], random: RandomState) -> Iterator[Sample]:
         """Sample a structure from the dataset infinitely.
 
         Parameters

@@ -17,9 +17,7 @@ def compute_af3_metrics(preds, evals, name):
     for model_id in range(5):
         # Load confidence file
         confidence_file = (
-            Path(preds)
-            / f"seed-1_sample-{model_id}"
-            / "summary_confidences.json"
+            Path(preds) / f"seed-1_sample-{model_id}" / "summary_confidences.json"
         )
         with confidence_file.open("r") as f:
             confidence_data = json.load(f)
@@ -34,27 +32,17 @@ def compute_af3_metrics(preds, evals, name):
             eval_data = json.load(f)
             for metric_name in METRICS:
                 if metric_name in eval_data:
-                    metrics.setdefault(metric_name, []).append(
-                        eval_data[metric_name]
-                    )
+                    metrics.setdefault(metric_name, []).append(eval_data[metric_name])
 
             if "dockq" in eval_data and eval_data["dockq"] is not None:
                 metrics.setdefault("dockq_>0.23", []).append(
                     np.mean(
-                        [
-                            float(v > 0.23)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.23) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("dockq_>0.49", []).append(
                     np.mean(
-                        [
-                            float(v > 0.49)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.49) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("len_dockq_", []).append(
@@ -66,8 +54,7 @@ def compute_af3_metrics(preds, evals, name):
             eval_data = json.load(f)
             if "lddt_pli" in eval_data:
                 lddt_plis = [
-                    x["score"]
-                    for x in eval_data["lddt_pli"]["assigned_scores"]
+                    x["score"] for x in eval_data["lddt_pli"]["assigned_scores"]
                 ]
                 for _ in eval_data["lddt_pli"][
                     "model_ligand_unassigned_reason"
@@ -80,12 +67,8 @@ def compute_af3_metrics(preds, evals, name):
                 metrics.setdefault("len_lddt_pli", []).append(len(lddt_plis))
 
             if "rmsd" in eval_data:
-                rmsds = [
-                    x["score"] for x in eval_data["rmsd"]["assigned_scores"]
-                ]
-                for _ in eval_data["rmsd"][
-                    "model_ligand_unassigned_reason"
-                ].items():
+                rmsds = [x["score"] for x in eval_data["rmsd"]["assigned_scores"]]
+                for _ in eval_data["rmsd"]["model_ligand_unassigned_reason"].items():
                     rmsds.append(100)
                 if not rmsds:
                     continue
@@ -142,27 +125,17 @@ def compute_chai_metrics(preds, evals, name):
             eval_data = json.load(f)
             for metric_name in METRICS:
                 if metric_name in eval_data:
-                    metrics.setdefault(metric_name, []).append(
-                        eval_data[metric_name]
-                    )
+                    metrics.setdefault(metric_name, []).append(eval_data[metric_name])
 
             if "dockq" in eval_data and eval_data["dockq"] is not None:
                 metrics.setdefault("dockq_>0.23", []).append(
                     np.mean(
-                        [
-                            float(v > 0.23)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.23) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("dockq_>0.49", []).append(
                     np.mean(
-                        [
-                            float(v > 0.49)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.49) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("len_dockq_", []).append(
@@ -174,8 +147,7 @@ def compute_chai_metrics(preds, evals, name):
             eval_data = json.load(f)
             if "lddt_pli" in eval_data:
                 lddt_plis = [
-                    x["score"]
-                    for x in eval_data["lddt_pli"]["assigned_scores"]
+                    x["score"] for x in eval_data["lddt_pli"]["assigned_scores"]
                 ]
                 for _ in eval_data["lddt_pli"][
                     "model_ligand_unassigned_reason"
@@ -188,12 +160,8 @@ def compute_chai_metrics(preds, evals, name):
                 metrics.setdefault("len_lddt_pli", []).append(len(lddt_plis))
 
             if "rmsd" in eval_data:
-                rmsds = [
-                    x["score"] for x in eval_data["rmsd"]["assigned_scores"]
-                ]
-                for _ in eval_data["rmsd"][
-                    "model_ligand_unassigned_reason"
-                ].items():
+                rmsds = [x["score"] for x in eval_data["rmsd"]["assigned_scores"]]
+                for _ in eval_data["rmsd"]["model_ligand_unassigned_reason"].items():
                     rmsds.append(100)
                 if not rmsds:
                     continue
@@ -238,8 +206,7 @@ def compute_boltz_metrics(preds, evals, name):
     for model_id in range(5):
         # Load confidence file
         confidence_file = (
-            Path(preds)
-            / f"confidence_{Path(preds).name}_model_{model_id}.json"
+            Path(preds) / f"confidence_{Path(preds).name}_model_{model_id}.json"
         )
         with confidence_file.open("r") as f:
             confidence_data = json.load(f)
@@ -254,27 +221,17 @@ def compute_boltz_metrics(preds, evals, name):
             eval_data = json.load(f)
             for metric_name in METRICS:
                 if metric_name in eval_data:
-                    metrics.setdefault(metric_name, []).append(
-                        eval_data[metric_name]
-                    )
+                    metrics.setdefault(metric_name, []).append(eval_data[metric_name])
 
             if "dockq" in eval_data and eval_data["dockq"] is not None:
                 metrics.setdefault("dockq_>0.23", []).append(
                     np.mean(
-                        [
-                            float(v > 0.23)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.23) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("dockq_>0.49", []).append(
                     np.mean(
-                        [
-                            float(v > 0.49)
-                            for v in eval_data["dockq"]
-                            if v is not None
-                        ]
+                        [float(v > 0.49) for v in eval_data["dockq"] if v is not None]
                     )
                 )
                 metrics.setdefault("len_dockq_", []).append(
@@ -286,8 +243,7 @@ def compute_boltz_metrics(preds, evals, name):
             eval_data = json.load(f)
             if "lddt_pli" in eval_data:
                 lddt_plis = [
-                    x["score"]
-                    for x in eval_data["lddt_pli"]["assigned_scores"]
+                    x["score"] for x in eval_data["lddt_pli"]["assigned_scores"]
                 ]
                 for _ in eval_data["lddt_pli"][
                     "model_ligand_unassigned_reason"
@@ -300,12 +256,8 @@ def compute_boltz_metrics(preds, evals, name):
                 metrics.setdefault("len_lddt_pli", []).append(len(lddt_plis))
 
             if "rmsd" in eval_data:
-                rmsds = [
-                    x["score"] for x in eval_data["rmsd"]["assigned_scores"]
-                ]
-                for _ in eval_data["rmsd"][
-                    "model_ligand_unassigned_reason"
-                ].items():
+                rmsds = [x["score"] for x in eval_data["rmsd"]["assigned_scores"]]
+                for _ in eval_data["rmsd"]["model_ligand_unassigned_reason"].items():
                     rmsds.append(100)
                 if not rmsds:
                     continue
@@ -572,9 +524,7 @@ def eval_validity_checks(df):
     top1 = df[df["model_idx"] == 0]
     top1 = top1[["tool", "pdb_id", "valid"]]
     top1["tool"] = top1["tool"].apply(lambda x: name_mapping[x])
-    top1 = top1.rename(
-        columns={"tool": "tool", "pdb_id": "target", "valid": "value"}
-    )
+    top1 = top1.rename(columns={"tool": "tool", "pdb_id": "target", "valid": "value"})
     top1["metric"] = "physical validity"
     top1["target"] = top1["target"].apply(lambda x: x.lower())
     top1 = top1[["tool", "target", "metric", "value"]]
@@ -622,9 +572,7 @@ def plot_data(desired_tools, desired_metrics, df, dataset, filename):
     ]
 
     # Apply bootstrap to each (tool, metric) group
-    boot_stats = filtered_df.groupby(["tool", "metric"])["value"].apply(
-        bootstrap_ci
-    )
+    boot_stats = filtered_df.groupby(["tool", "metric"])["value"].apply(bootstrap_ci)
 
     # boot_stats is a Series of tuples (mean, lower, upper). Convert to DataFrame:
     boot_stats = boot_stats.apply(pd.Series)
@@ -686,9 +634,7 @@ def plot_data(desired_tools, desired_metrics, df, dataset, filename):
     bar_spacing = 0.015
     total_width = 0.7
     # Adjust width to account for the spacing
-    width = (total_width - (len(tool_order) - 1) * bar_spacing) / len(
-        tool_order
-    )
+    width = (total_width - (len(tool_order) - 1) * bar_spacing) / len(tool_order)
 
     for i, tool in enumerate(tool_order):
         # Each subsequent bar moves over by width + bar_spacing
@@ -717,9 +663,7 @@ def plot_data(desired_tools, desired_metrics, df, dataset, filename):
     ax.set_title(f"Performances on {dataset} with 95% CI (Bootstrap)")
 
     plt.tight_layout()
-    ax.legend(
-        loc="lower center", bbox_to_anchor=(0.5, 0.85), ncols=4, frameon=False
-    )
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 0.85), ncols=4, frameon=False)
 
     plt.savefig(filename)
     plt.show()

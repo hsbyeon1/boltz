@@ -69,8 +69,7 @@ def confidence_loss(
         + pde
         + resolved
         + alpha_pae * pae
-        + relative_supervision_weight
-        * (rel_plddt + rel_pde + alpha_pae * rel_pae)
+        + relative_supervision_weight * (rel_plddt + rel_pde + alpha_pae * rel_pae)
     )
 
     dict_out = {
@@ -153,15 +152,13 @@ def get_target_lddt(
         atom_mask = true_coords_resolved_mask
 
         R_set_to_rep_atom = feats["r_set_to_rep_atom"]
-        R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(
-            multiplicity, 0
-        ).float()
+        R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(multiplicity, 0).float()
 
         token_type = feats["mol_type"]
         token_type = token_type.repeat_interleave(multiplicity, 0)
-        is_nucleotide_token = (
-            token_type == const.chain_type_ids["DNA"]
-        ).float() + (token_type == const.chain_type_ids["RNA"]).float()
+        is_nucleotide_token = (token_type == const.chain_type_ids["DNA"]).float() + (
+            token_type == const.chain_type_ids["RNA"]
+        ).float()
 
         B = true_atom_coords.shape[0]
 
@@ -169,9 +166,7 @@ def get_target_lddt(
         atom_to_token = atom_to_token.repeat_interleave(multiplicity, 0)
 
         token_to_rep_atom = feats["token_to_rep_atom"].float()
-        token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-            multiplicity, 0
-        )
+        token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0)
 
         if token_level_confidence:
             true_token_coords = torch.bmm(token_to_rep_atom, true_atom_coords)
@@ -190,22 +185,16 @@ def get_target_lddt(
         pair_mask = atom_mask.unsqueeze(-1) * atom_mask.unsqueeze(-2)
         pair_mask = (
             pair_mask
-            * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[
-                None, :, :
-            ]
+            * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[None, :, :]
         )
         pair_mask = torch.einsum("bnm,bkm->bnk", pair_mask, R_set_to_rep_atom)
 
         if token_level_confidence:
             pair_mask = torch.bmm(token_to_rep_atom, pair_mask)
-            atom_mask = torch.bmm(
-                token_to_rep_atom, atom_mask.unsqueeze(-1).float()
-            )
+            atom_mask = torch.bmm(token_to_rep_atom, atom_mask.unsqueeze(-1).float())
         is_nucleotide_R_element = torch.bmm(
             R_set_to_rep_atom,
-            torch.bmm(
-                atom_to_token, is_nucleotide_token.unsqueeze(-1).float()
-            ),
+            torch.bmm(atom_to_token, is_nucleotide_token.unsqueeze(-1).float()),
         ).squeeze(-1)
         cutoff = 15 + 15 * is_nucleotide_R_element.reshape(B, 1, -1).repeat(
             1, true_d.shape[1], 1
@@ -281,20 +270,20 @@ def plddt_loss(
             * torch.nn.functional.log_softmax(relative_pred_lddt, dim=-1),
             dim=-1,
         )
-        rel_atom_mask = atom_mask.view(
-            B // multiplicity, multiplicity, 1, -1
-        ).repeat(1, 1, multiplicity, 1)
+        rel_atom_mask = atom_mask.view(B // multiplicity, multiplicity, 1, -1).repeat(
+            1, 1, multiplicity, 1
+        )
         rel_mask_no_match = mask_no_match.view(
             B // multiplicity, multiplicity, 1, -1
         ).repeat(1, 1, multiplicity, 1)
-        rel_loss = torch.sum(
-            rel_errors * rel_atom_mask * rel_mask_no_match, dim=-1
-        ) / (1e-7 + torch.sum(rel_atom_mask * rel_mask_no_match, dim=-1))
+        rel_loss = torch.sum(rel_errors * rel_atom_mask * rel_mask_no_match, dim=-1) / (
+            1e-7 + torch.sum(rel_atom_mask * rel_mask_no_match, dim=-1)
+        )
 
         if mask_loss is not None:
-            rel_mask_loss = mask_loss.view(
-                B // multiplicity, multiplicity, 1
-            ).repeat(1, 1, multiplicity)
+            rel_mask_loss = mask_loss.view(B // multiplicity, multiplicity, 1).repeat(
+                1, 1, multiplicity
+            )
             rel_loss = torch.sum(rel_loss * rel_mask_loss) / (
                 torch.sum(rel_mask_loss) + 1e-7
             )
@@ -325,21 +314,15 @@ def lddt_dist(dmat_predicted, dmat_true, mask, cutoff=15.0, per_atom=False):
         return score, mask_no_match.float()
     else:
         norm = 1.0 / (1e-10 + torch.sum(dists_to_score, dim=(-2, -1)))
-        score = norm * (
-            1e-10 + torch.sum(dists_to_score * score, dim=(-2, -1))
-        )
+        score = norm * (1e-10 + torch.sum(dists_to_score * score, dim=(-2, -1)))
         total = torch.sum(dists_to_score, dim=(-1, -2))
         return score, total
 
 
-def express_coordinate_in_frame(
-    atom_coords, frame_atom_a, frame_atom_b, frame_atom_c
-):
+def express_coordinate_in_frame(atom_coords, frame_atom_a, frame_atom_b, frame_atom_c):
     batch, multiplicity = atom_coords.shape[0], atom_coords.shape[1]
     batch_indices0 = torch.arange(batch)[:, None, None].to(atom_coords.device)
-    batch_indices1 = torch.arange(multiplicity)[None, :, None].to(
-        atom_coords.device
-    )
+    batch_indices1 = torch.arange(multiplicity)[None, :, None].to(atom_coords.device)
 
     # extract frame atoms
     a, b, c = (
@@ -431,8 +414,7 @@ def get_target_pae(
         )
 
         target_pae = torch.sqrt(
-            ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1)
-            + 1e-8
+            ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1) + 1e-8
         )
 
         # Compute mask for the pae loss
@@ -481,9 +463,7 @@ def pae_loss(
     pae_one_hot = nn.functional.one_hot(bin_index, num_classes=num_bins)
     errors = -1 * torch.sum(
         pae_one_hot
-        * torch.nn.functional.log_softmax(
-            pred_pae.reshape(pae_one_hot.shape), dim=-1
-        ),
+        * torch.nn.functional.log_softmax(pred_pae.reshape(pae_one_hot.shape), dim=-1),
         dim=-1,
     )
     loss = torch.sum(errors * pair_mask, dim=(-2, -1)) / (
@@ -520,17 +500,17 @@ def pae_loss(
             * torch.nn.functional.log_softmax(relative_pred_pae, dim=-1),
             dim=-1,
         )
-        rel_mask = pair_mask.view(
-            B // multiplicity, multiplicity, 1, N, N
-        ).repeat(1, 1, multiplicity, 1, 1)
+        rel_mask = pair_mask.view(B // multiplicity, multiplicity, 1, N, N).repeat(
+            1, 1, multiplicity, 1, 1
+        )
         rel_loss = torch.sum(rel_errors * rel_mask, dim=(-2, -1)) / (
             1e-7 + torch.sum(rel_mask, dim=(-2, -1))
         )
 
         if mask_loss is not None:
-            rel_mask_loss = mask_loss.view(
-                B // multiplicity, multiplicity, 1
-            ).repeat(1, 1, multiplicity)
+            rel_mask_loss = mask_loss.view(B // multiplicity, multiplicity, 1).repeat(
+                1, 1, multiplicity
+            )
             rel_loss = torch.sum(rel_loss * rel_mask_loss) / (
                 torch.sum(rel_mask_loss) + 1e-7
             )
@@ -550,9 +530,7 @@ def get_target_pde(
     with torch.cuda.amp.autocast(enabled=False):
         # extract necessary features
         token_to_rep_atom = feats["token_to_rep_atom"]
-        token_to_rep_atom = token_to_rep_atom.repeat_interleave(
-            multiplicity, 0
-        ).float()
+        token_to_rep_atom = token_to_rep_atom.repeat_interleave(multiplicity, 0).float()
         token_mask = torch.bmm(
             token_to_rep_atom, true_coords_resolved_mask.unsqueeze(-1).float()
         ).squeeze(-1)
@@ -638,9 +616,9 @@ def pde_loss(
         )
 
         if mask_loss is not None:
-            rel_mask_loss = mask_loss.view(
-                B // multiplicity, multiplicity, 1
-            ).repeat(1, 1, multiplicity)
+            rel_mask_loss = mask_loss.view(B // multiplicity, multiplicity, 1).repeat(
+                1, 1, multiplicity
+            )
             rel_loss = torch.sum(rel_loss * rel_mask_loss) / (
                 torch.sum(rel_mask_loss) + 1e-7
             )

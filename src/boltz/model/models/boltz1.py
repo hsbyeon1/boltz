@@ -192,9 +192,7 @@ class Boltz1(LightningModule):
                 s_input_dim=s_input_dim,
                 **msa_args,
             )
-        self.pairformer_module = PairformerModule(
-            token_s, token_z, **pairformer_args
-        )
+        self.pairformer_module = PairformerModule(token_s, token_z, **pairformer_args)
         if compile_pairformer:
             # Big models hit the default cache limit (8)
             self.is_pairformer_compiled = True
@@ -267,8 +265,7 @@ class Boltz1(LightningModule):
         """Set the model for training, validation and inference."""
         if stage == "predict" and not (
             torch.cuda.is_available()
-            and torch.cuda.get_device_properties(torch.device("cuda")).major
-            >= 8.0  # noqa: PLR2004
+            and torch.cuda.get_device_properties(torch.device("cuda")).major >= 8.0  # noqa: PLR2004
         ):
             self.use_kernels = False
 
@@ -309,9 +306,7 @@ class Boltz1(LightningModule):
             pair_mask = mask[:, :, None] * mask[:, None, :]
 
             for i in range(recycling_steps + 1):
-                with torch.set_grad_enabled(
-                    self.training and (i == recycling_steps)
-                ):
+                with torch.set_grad_enabled(self.training and (i == recycling_steps)):
                     # Fixes an issue with unused parameters in autocast
                     if (
                         self.training
@@ -400,10 +395,7 @@ class Boltz1(LightningModule):
                     use_kernels=self.use_kernels,
                 )
             )
-        if (
-            self.confidence_prediction
-            and self.confidence_module.use_s_diffusion
-        ):
+        if self.confidence_prediction and self.confidence_module.use_s_diffusion:
             dict_out.pop("diff_token_repr", None)
         return dict_out
 
@@ -439,26 +431,20 @@ class Boltz1(LightningModule):
                     )
                     rmsds.append(rmsd)
                     true_coords.append(best_true_coords)
-                    true_coords_resolved_mask.append(
-                        best_true_coords_resolved_mask
-                    )
+                    true_coords_resolved_mask.append(best_true_coords_resolved_mask)
                     if rmsd < best_rmsd:
                         best_rmsd = rmsd
                 best_rmsds.append(best_rmsd)
             true_coords = torch.cat(true_coords, dim=0)
-            true_coords_resolved_mask = torch.cat(
-                true_coords_resolved_mask, dim=0
-            )
+            true_coords_resolved_mask = torch.cat(true_coords_resolved_mask, dim=0)
         else:
             true_coords = (
-                batch["coords"]
-                .squeeze(1)
-                .repeat_interleave(diffusion_samples, 0)
+                batch["coords"].squeeze(1).repeat_interleave(diffusion_samples, 0)
             )
 
-            true_coords_resolved_mask = batch[
-                "atom_resolved_mask"
-            ].repeat_interleave(diffusion_samples, 0)
+            true_coords_resolved_mask = batch["atom_resolved_mask"].repeat_interleave(
+                diffusion_samples, 0
+            )
             rmsds, best_rmsds = weighted_minimum_rmsd(
                 out["sample_atom_coords"],
                 batch,
@@ -469,9 +455,7 @@ class Boltz1(LightningModule):
 
         return true_coords, rmsds, best_rmsds, true_coords_resolved_mask
 
-    def training_step(
-        self, batch: dict[str, Tensor], batch_idx: int
-    ) -> Tensor:
+    def training_step(self, batch: dict[str, Tensor], batch_idx: int) -> Tensor:
         # Sample recycling steps
         recycling_steps = random.randint(0, self.training_args.recycling_steps)
 
@@ -507,13 +491,11 @@ class Boltz1(LightningModule):
 
         if self.confidence_prediction:
             # confidence model symmetry correction
-            true_coords, _, _, true_coords_resolved_mask = (
-                self.get_true_coordinates(
-                    batch,
-                    out,
-                    diffusion_samples=self.training_args.diffusion_samples,
-                    symmetry_correction=self.training_args.symmetry_correction,
-                )
+            true_coords, _, _, true_coords_resolved_mask = self.get_true_coordinates(
+                batch,
+                out,
+                diffusion_samples=self.training_args.diffusion_samples,
+                symmetry_correction=self.training_args.symmetry_correction,
             )
 
             confidence_loss_dict = confidence_loss(
@@ -532,10 +514,8 @@ class Boltz1(LightningModule):
 
         # Aggregate losses
         loss = (
-            self.training_args.confidence_loss_weight
-            * confidence_loss_dict["loss"]
-            + self.training_args.diffusion_loss_weight
-            * diffusion_loss_dict["loss"]
+            self.training_args.confidence_loss_weight * confidence_loss_dict["loss"]
+            + self.training_args.diffusion_loss_weight * diffusion_loss_dict["loss"]
             + self.training_args.distogram_loss_weight * disto_loss
         )
         # Log losses
@@ -552,9 +532,7 @@ class Boltz1(LightningModule):
             for k in self.train_confidence_loss_dict_logger.keys():
                 self.train_confidence_loss_dict_logger[k].update(
                     confidence_loss_dict["loss_breakdown"][k].detach()
-                    if torch.is_tensor(
-                        confidence_loss_dict["loss_breakdown"][k]
-                    )
+                    if torch.is_tensor(confidence_loss_dict["loss_breakdown"][k])
                     else confidence_loss_dict["loss_breakdown"][k]
                 )
         self.log("train/loss", loss)
@@ -622,27 +600,19 @@ class Boltz1(LightningModule):
             on_epoch=True,
         )
         for k, v in self.train_confidence_loss_dict_logger.items():
-            self.log(
-                f"train/{k}", v, prog_bar=False, on_step=False, on_epoch=True
-            )
+            self.log(f"train/{k}", v, prog_bar=False, on_step=False, on_epoch=True)
 
     def gradient_norm(self, module) -> float:
         # Only compute over parameters that are being trained
         parameters = filter(lambda p: p.requires_grad, module.parameters())
         parameters = filter(lambda p: p.grad is not None, parameters)
-        norm = (
-            torch.tensor([p.grad.norm(p=2) ** 2 for p in parameters])
-            .sum()
-            .sqrt()
-        )
+        norm = torch.tensor([p.grad.norm(p=2) ** 2 for p in parameters]).sum().sqrt()
         return norm
 
     def parameter_norm(self, module) -> float:
         # Only compute over parameters that are being trained
         parameters = filter(lambda p: p.requires_grad, module.parameters())
-        norm = (
-            torch.tensor([p.norm(p=2) ** 2 for p in parameters]).sum().sqrt()
-        )
+        norm = torch.tensor([p.norm(p=2) ** 2 for p in parameters]).sum().sqrt()
         return norm
 
     def validation_step(self, batch: dict[str, Tensor], batch_idx: int):
@@ -732,22 +702,18 @@ class Boltz1(LightningModule):
                 complex_lddt += all_lddt_dict[key] * all_total_dict[key]
                 complex_total += all_total_dict[key]
             complex_lddt /= complex_total + 1e-7
-            best_complex_idx = complex_lddt.reshape(-1, n_samples).argmax(
-                dim=1
-            )
+            best_complex_idx = complex_lddt.reshape(-1, n_samples).argmax(dim=1)
             for key in all_lddt_dict:
-                best_idx = (
-                    all_lddt_dict[key].reshape(-1, n_samples).argmax(dim=1)
-                )
-                best_lddt_dict[key] = all_lddt_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), best_idx]
-                best_total_dict[key] = all_total_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), best_idx]
-                best_complex_lddt_dict[key] = all_lddt_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), best_complex_idx]
+                best_idx = all_lddt_dict[key].reshape(-1, n_samples).argmax(dim=1)
+                best_lddt_dict[key] = all_lddt_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), best_idx
+                ]
+                best_total_dict[key] = all_total_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), best_idx
+                ]
+                best_complex_lddt_dict[key] = all_lddt_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), best_complex_idx
+                ]
                 best_complex_total_dict[key] = all_total_dict[key].reshape(
                     -1, n_samples
                 )[torch.arange(B), best_complex_idx]
@@ -841,31 +807,25 @@ class Boltz1(LightningModule):
                 iptm_top1_total = all_total_dict[key].reshape(-1, n_samples)[
                     torch.arange(B), iptm_top1_idx
                 ]
-                ligand_iptm_top1_lddt = all_lddt_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), ligand_iptm_top1_idx]
-                ligand_iptm_top1_total = all_total_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), ligand_iptm_top1_idx]
-                protein_iptm_top1_lddt = all_lddt_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), protein_iptm_top1_idx]
-                protein_iptm_top1_total = all_total_dict[key].reshape(
-                    -1, n_samples
-                )[torch.arange(B), protein_iptm_top1_idx]
+                ligand_iptm_top1_lddt = all_lddt_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), ligand_iptm_top1_idx
+                ]
+                ligand_iptm_top1_total = all_total_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), ligand_iptm_top1_idx
+                ]
+                protein_iptm_top1_lddt = all_lddt_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), protein_iptm_top1_idx
+                ]
+                protein_iptm_top1_total = all_total_dict[key].reshape(-1, n_samples)[
+                    torch.arange(B), protein_iptm_top1_idx
+                ]
 
                 self.top1_lddt[key].update(top1_lddt, top1_total)
-                self.iplddt_top1_lddt[key].update(
-                    iplddt_top1_lddt, iplddt_top1_total
-                )
+                self.iplddt_top1_lddt[key].update(iplddt_top1_lddt, iplddt_top1_total)
                 self.pde_top1_lddt[key].update(pde_top1_lddt, pde_top1_total)
-                self.ipde_top1_lddt[key].update(
-                    ipde_top1_lddt, ipde_top1_total
-                )
+                self.ipde_top1_lddt[key].update(ipde_top1_lddt, ipde_top1_total)
                 self.ptm_top1_lddt[key].update(ptm_top1_lddt, ptm_top1_total)
-                self.iptm_top1_lddt[key].update(
-                    iptm_top1_lddt, iptm_top1_total
-                )
+                self.iptm_top1_lddt[key].update(iptm_top1_lddt, iptm_top1_total)
                 self.ligand_iptm_top1_lddt[key].update(
                     ligand_iptm_top1_lddt, ligand_iptm_top1_total
                 )
@@ -873,15 +833,9 @@ class Boltz1(LightningModule):
                     protein_iptm_top1_lddt, protein_iptm_top1_total
                 )
 
-                self.avg_lddt[key].update(
-                    all_lddt_dict[key], all_total_dict[key]
-                )
-                self.pde_mae[key].update(
-                    mae_pde_dict[key], total_mae_pde_dict[key]
-                )
-                self.pae_mae[key].update(
-                    mae_pae_dict[key], total_mae_pae_dict[key]
-                )
+                self.avg_lddt[key].update(all_lddt_dict[key], all_total_dict[key])
+                self.pde_mae[key].update(mae_pde_dict[key], total_mae_pde_dict[key])
+                self.pae_mae[key].update(mae_pae_dict[key], total_mae_pae_dict[key])
 
             for key in mae_plddt_dict:
                 self.plddt_mae[key].update(
@@ -916,9 +870,7 @@ class Boltz1(LightningModule):
                     )
             else:
                 self.lddt[m].update(best_lddt_dict[m], best_total_dict[m])
-                self.disto_lddt[m].update(
-                    disto_lddt_dict[m], disto_total_dict[m]
-                )
+                self.disto_lddt[m].update(disto_lddt_dict[m], disto_total_dict[m])
                 self.complex_lddt[m].update(
                     best_complex_lddt_dict[m], best_complex_total_dict[m]
                 )
@@ -946,19 +898,13 @@ class Boltz1(LightningModule):
 
         for m in const.out_types + ["pocket_ligand_protein"]:
             avg_lddt[m] = self.lddt[m].compute()
-            avg_lddt[m] = (
-                0.0 if torch.isnan(avg_lddt[m]) else avg_lddt[m].item()
-            )
+            avg_lddt[m] = 0.0 if torch.isnan(avg_lddt[m]) else avg_lddt[m].item()
             self.lddt[m].reset()
-            self.log(
-                f"val/lddt_{m}", avg_lddt[m], prog_bar=False, sync_dist=True
-            )
+            self.log(f"val/lddt_{m}", avg_lddt[m], prog_bar=False, sync_dist=True)
 
             avg_disto_lddt[m] = self.disto_lddt[m].compute()
             avg_disto_lddt[m] = (
-                0.0
-                if torch.isnan(avg_disto_lddt[m])
-                else avg_disto_lddt[m].item()
+                0.0 if torch.isnan(avg_disto_lddt[m]) else avg_disto_lddt[m].item()
             )
             self.disto_lddt[m].reset()
             self.log(
@@ -969,9 +915,7 @@ class Boltz1(LightningModule):
             )
             avg_complex_lddt[m] = self.complex_lddt[m].compute()
             avg_complex_lddt[m] = (
-                0.0
-                if torch.isnan(avg_complex_lddt[m])
-                else avg_complex_lddt[m].item()
+                0.0 if torch.isnan(avg_complex_lddt[m]) else avg_complex_lddt[m].item()
             )
             self.complex_lddt[m].reset()
             self.log(
@@ -983,9 +927,7 @@ class Boltz1(LightningModule):
             if self.confidence_prediction:
                 avg_top1_lddt[m] = self.top1_lddt[m].compute()
                 avg_top1_lddt[m] = (
-                    0.0
-                    if torch.isnan(avg_top1_lddt[m])
-                    else avg_top1_lddt[m].item()
+                    0.0 if torch.isnan(avg_top1_lddt[m]) else avg_top1_lddt[m].item()
                 )
                 self.top1_lddt[m].reset()
                 self.log(
@@ -1060,9 +1002,7 @@ class Boltz1(LightningModule):
                     sync_dist=True,
                 )
 
-                avg_ligand_iptm_top1_lddt[m] = self.ligand_iptm_top1_lddt[
-                    m
-                ].compute()
+                avg_ligand_iptm_top1_lddt[m] = self.ligand_iptm_top1_lddt[m].compute()
                 avg_ligand_iptm_top1_lddt[m] = (
                     0.0
                     if torch.isnan(avg_ligand_iptm_top1_lddt[m])
@@ -1076,9 +1016,7 @@ class Boltz1(LightningModule):
                     sync_dist=True,
                 )
 
-                avg_protein_iptm_top1_lddt[m] = self.protein_iptm_top1_lddt[
-                    m
-                ].compute()
+                avg_protein_iptm_top1_lddt[m] = self.protein_iptm_top1_lddt[m].compute()
                 avg_protein_iptm_top1_lddt[m] = (
                     0.0
                     if torch.isnan(avg_protein_iptm_top1_lddt[m])
@@ -1094,9 +1032,7 @@ class Boltz1(LightningModule):
 
                 avg_avg_lddt[m] = self.avg_lddt[m].compute()
                 avg_avg_lddt[m] = (
-                    0.0
-                    if torch.isnan(avg_avg_lddt[m])
-                    else avg_avg_lddt[m].item()
+                    0.0 if torch.isnan(avg_avg_lddt[m]) else avg_avg_lddt[m].item()
                 )
                 self.avg_lddt[m].reset()
                 self.log(
@@ -1136,9 +1072,7 @@ class Boltz1(LightningModule):
         overall_disto_lddt = sum(
             avg_disto_lddt[m] * w for (m, w) in const.out_types_weights.items()
         ) / sum(const.out_types_weights.values())
-        self.log(
-            "val/disto_lddt", overall_disto_lddt, prog_bar=True, sync_dist=True
-        )
+        self.log("val/disto_lddt", overall_disto_lddt, prog_bar=True, sync_dist=True)
 
         overall_lddt = sum(
             avg_lddt[m] * w for (m, w) in const.out_types_weights.items()
@@ -1146,8 +1080,7 @@ class Boltz1(LightningModule):
         self.log("val/lddt", overall_lddt, prog_bar=True, sync_dist=True)
 
         overall_complex_lddt = sum(
-            avg_complex_lddt[m] * w
-            for (m, w) in const.out_types_weights.items()
+            avg_complex_lddt[m] * w for (m, w) in const.out_types_weights.items()
         ) / sum(const.out_types_weights.values())
         self.log(
             "val/complex_lddt",
@@ -1158,8 +1091,7 @@ class Boltz1(LightningModule):
 
         if self.confidence_prediction:
             overall_top1_lddt = sum(
-                avg_top1_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_top1_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
             self.log(
                 "val/top1_lddt",
@@ -1180,8 +1112,7 @@ class Boltz1(LightningModule):
             )
 
             overall_pde_top1_lddt = sum(
-                avg_pde_top1_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_pde_top1_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
             self.log(
                 "val/pde_top1_lddt",
@@ -1191,8 +1122,7 @@ class Boltz1(LightningModule):
             )
 
             overall_ipde_top1_lddt = sum(
-                avg_ipde_top1_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_ipde_top1_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
             self.log(
                 "val/ipde_top1_lddt",
@@ -1202,8 +1132,7 @@ class Boltz1(LightningModule):
             )
 
             overall_ptm_top1_lddt = sum(
-                avg_ptm_top1_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_ptm_top1_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
             self.log(
                 "val/ptm_top1_lddt",
@@ -1213,8 +1142,7 @@ class Boltz1(LightningModule):
             )
 
             overall_iptm_top1_lddt = sum(
-                avg_iptm_top1_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_iptm_top1_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
             self.log(
                 "val/iptm_top1_lddt",
@@ -1224,16 +1152,11 @@ class Boltz1(LightningModule):
             )
 
             overall_avg_lddt = sum(
-                avg_avg_lddt[m] * w
-                for (m, w) in const.out_types_weights.items()
+                avg_avg_lddt[m] * w for (m, w) in const.out_types_weights.items()
             ) / sum(const.out_types_weights.values())
-            self.log(
-                "val/avg_lddt", overall_avg_lddt, prog_bar=True, sync_dist=True
-            )
+            self.log("val/avg_lddt", overall_avg_lddt, prog_bar=True, sync_dist=True)
 
-        self.log(
-            "val/rmsd", self.rmsd.compute(), prog_bar=True, sync_dist=True
-        )
+        self.log("val/rmsd", self.rmsd.compute(), prog_bar=True, sync_dist=True)
         self.rmsd.reset()
 
         self.log(
@@ -1244,9 +1167,7 @@ class Boltz1(LightningModule):
         )
         self.best_rmsd.reset()
 
-    def predict_step(
-        self, batch: Any, batch_idx: int, dataloader_idx: int = 0
-    ) -> Any:
+    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
         try:
             out = self(
                 batch,
@@ -1308,9 +1229,7 @@ class Boltz1(LightningModule):
             parameters = [p for p in self.parameters() if p.requires_grad]
         else:
             parameters = [
-                p
-                for p in self.confidence_module.parameters()
-                if p.requires_grad
+                p for p in self.confidence_module.parameters() if p.requires_grad
             ] + [
                 p
                 for p in self.structure_module.out_token_feat_update.parameters()
@@ -1350,9 +1269,7 @@ class Boltz1(LightningModule):
                 parameters=self.parameters(), decay=self.ema_decay
             )
             if self.ema.compatible(checkpoint["ema"]["shadow_params"]):
-                self.ema.load_state_dict(
-                    checkpoint["ema"], device=torch.device("cpu")
-                )
+                self.ema.load_state_dict(checkpoint["ema"], device=torch.device("cpu"))
             else:
                 self.ema = None
                 print(

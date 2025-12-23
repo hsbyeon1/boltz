@@ -86,9 +86,7 @@ def to_pdb(
                     atom_name = [chr(c + 32) for c in atom_name if c != 0]
                     atom_name = "".join(atom_name)
                     name = atom_name
-                    element = periodic_table.GetElementSymbol(
-                        atom["element"].item()
-                    )
+                    element = periodic_table.GetElementSymbol(atom["element"].item())
 
                 name = name if len(name) == 4 else f" {name}"  # noqa: PLR2004
                 alt_loc = ""
@@ -99,9 +97,7 @@ def to_pdb(
                 residue_index = residue["res_idx"] + 1
                 pos = atom_coords[i]
                 res_name_3 = (
-                    "LIG"
-                    if record_type == "HETATM"
-                    else str(residue["name"][:3])
+                    "LIG" if record_type == "HETATM" else str(residue["name"][:3])
                 )
 
                 if record_type != "HETATM":
@@ -122,9 +118,7 @@ def to_pdb(
                         100.00
                         if plddts is None
                         else round(
-                            plddts[
-                                prev_polymer_resnum + ligand_index_offset
-                            ].item()
+                            plddts[prev_polymer_resnum + ligand_index_offset].item()
                             * 100,
                             2,
                         )

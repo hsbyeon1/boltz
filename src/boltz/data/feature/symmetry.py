@@ -76,10 +76,7 @@ def compute_symmetry_idx_dictionary(data):
         for j, token in enumerate(chain.tokens):
             token.start_idx = total_count - chain.start_idx
             all_coords.extend(
-                [
-                    [atom.coords.x, atom.coords.y, atom.coords.z]
-                    for atom in token.atoms
-                ]
+                [[atom.coords.x, atom.coords.y, atom.coords.z] for atom in token.atoms]
             )
             total_count += len(token.atoms)
     return all_coords
@@ -131,14 +128,10 @@ def minimum_symmetry_coords(
         true_all_resolved_mask = all_resolved_mask.clone()
         for start1, end1, start2, end2, chainidx1, chainidx2 in c:
             true_all_coords[:, start1:end1] = all_coords[:, start2:end2]
-            true_all_resolved_mask[start1:end1] = all_resolved_mask[
-                start2:end2
-            ]
+            true_all_resolved_mask[start1:end1] = all_resolved_mask[start2:end2]
         true_coords = true_all_coords[:, crop_to_all_atom_map]
         true_resolved_mask = true_all_resolved_mask[crop_to_all_atom_map]
-        true_coords = pad_dim(
-            true_coords, 1, coords.shape[1] - true_coords.shape[1]
-        )
+        true_coords = pad_dim(true_coords, 1, coords.shape[1] - true_coords.shape[1])
         true_resolved_mask = pad_dim(
             true_resolved_mask,
             0,
@@ -149,9 +142,7 @@ def minimum_symmetry_coords(
                 coords,
                 true_coords,
                 atom_mask=true_resolved_mask,
-                atom_to_token=feats["atom_to_token"][
-                    index_batch : index_batch + 1
-                ],
+                atom_to_token=feats["atom_to_token"][index_batch : index_batch + 1],
                 mol_type=feats["mol_type"][index_batch : index_batch + 1],
                 **args_rmsd,
             )
@@ -221,19 +212,13 @@ def minimum_symmetry_coords(
                 new_true_resolved_mask[j] = true_resolved_mask[i]
             try:
                 # TODO if this is too slow maybe we can get away with not recomputing alignment
-                rmsd, aligned_coords, align_weights = (
-                    weighted_minimum_rmsd_single(
-                        coords,
-                        new_true_coords,
-                        atom_mask=new_true_resolved_mask,
-                        atom_to_token=feats["atom_to_token"][
-                            index_batch : index_batch + 1
-                        ],
-                        mol_type=feats["mol_type"][
-                            index_batch : index_batch + 1
-                        ],
-                        **args_rmsd,
-                    )
+                rmsd, aligned_coords, align_weights = weighted_minimum_rmsd_single(
+                    coords,
+                    new_true_coords,
+                    atom_mask=new_true_resolved_mask,
+                    atom_to_token=feats["atom_to_token"][index_batch : index_batch + 1],
+                    mol_type=feats["mol_type"][index_batch : index_batch + 1],
+                    **args_rmsd,
                 )
             except Exception as e:
                 raise e
@@ -281,9 +266,7 @@ def minimum_lddt_symmetry_coords(
         true_all_resolved_mask = all_resolved_mask.clone()
         for start1, end1, start2, end2, chainidx1, chainidx2 in c:
             true_all_coords[:, start1:end1] = all_coords[:, start2:end2]
-            true_all_resolved_mask[start1:end1] = all_resolved_mask[
-                start2:end2
-            ]
+            true_all_resolved_mask[start1:end1] = all_resolved_mask[start2:end2]
         true_coords = true_all_coords[:, crop_to_all_atom_map]
         true_resolved_mask = true_all_resolved_mask[crop_to_all_atom_map]
         dmat_true = torch.cdist(true_coords, true_coords)
@@ -318,14 +301,10 @@ def minimum_lddt_symmetry_coords(
                 indices.append(i)
 
             indices = (
-                torch.from_numpy(np.asarray(indices))
-                .to(new_true_coords.device)
-                .long()
+                torch.from_numpy(np.asarray(indices)).to(new_true_coords.device).long()
             )
 
-            pred_coords_subset = coords[:, : len(crop_to_all_atom_map)][
-                :, indices
-            ]
+            pred_coords_subset = coords[:, : len(crop_to_all_atom_map)][:, indices]
             true_coords_subset = true_coords[:, indices]
             new_true_coords_subset = new_true_coords[:, indices]
 
@@ -333,9 +312,7 @@ def minimum_lddt_symmetry_coords(
                 coords[:, : len(crop_to_all_atom_map)], pred_coords_subset
             )
             sub_dmat_true = torch.cdist(true_coords, true_coords_subset)
-            sub_dmat_new_true = torch.cdist(
-                new_true_coords, new_true_coords_subset
-            )
+            sub_dmat_new_true = torch.cdist(new_true_coords, new_true_coords_subset)
 
             sub_true_pair_lddt = (
                 true_resolved_mask[:, None] * true_resolved_mask[None, indices]
@@ -346,8 +323,7 @@ def minimum_lddt_symmetry_coords(
             )
 
             sub_new_true_pair_lddt = (
-                new_true_resolved_mask[:, None]
-                * new_true_resolved_mask[None, indices]
+                new_true_resolved_mask[:, None] * new_true_resolved_mask[None, indices]
             )
             sub_new_true_pair_lddt[indices] = (
                 sub_new_true_pair_lddt[indices]
@@ -378,9 +354,7 @@ def minimum_lddt_symmetry_coords(
         true_resolved_mask = best_true_resolved_mask.clone()
 
     # Recomputing alignment
-    true_coords = pad_dim(
-        true_coords, 1, coords.shape[1] - true_coords.shape[1]
-    )
+    true_coords = pad_dim(true_coords, 1, coords.shape[1] - true_coords.shape[1])
     true_resolved_mask = pad_dim(
         true_resolved_mask,
         0,
@@ -392,9 +366,7 @@ def minimum_lddt_symmetry_coords(
             coords,
             true_coords,
             atom_mask=true_resolved_mask,
-            atom_to_token=feats["atom_to_token"][
-                index_batch : index_batch + 1
-            ],
+            atom_to_token=feats["atom_to_token"][index_batch : index_batch + 1],
             mol_type=feats["mol_type"][index_batch : index_batch + 1],
             **args_rmsd,
         )
@@ -417,10 +389,7 @@ def compute_all_coords_mask(structure):
         for j, token in enumerate(chain.tokens):
             token.start_idx = total_count - chain.start_idx
             all_coords.extend(
-                [
-                    [atom.coords.x, atom.coords.y, atom.coords.z]
-                    for atom in token.atoms
-                ]
+                [[atom.coords.x, atom.coords.y, atom.coords.z] for atom in token.atoms]
             )
             all_coords_crop_mask.extend(
                 [token.in_crop for _ in range(len(token.atoms))]
@@ -453,9 +422,7 @@ def get_chain_symmetries(cropped, max_n_symmetries=100):
         )
 
         # compute coordinates and resolved mask
-        resolved_mask = structure.atoms["is_present"][
-            atom_idx : atom_idx + atom_num
-        ]
+        resolved_mask = structure.atoms["is_present"][atom_idx : atom_idx + atom_num]
 
         # ensemble_atom_starts = [structure.ensemble[idx]["atom_coord_idx"] for idx in cropped.ensemble_ref_idxs]
         # coords = np.array(
@@ -485,13 +452,9 @@ def get_chain_symmetries(cropped, max_n_symmetries=100):
     for token in cropped.tokens:
         chain_idx = chain_asym_id.index(token["asym_id"])
         start = (
-            chain_atom_idx[chain_idx]
-            - original_atom_idx[chain_idx]
-            + token["atom_idx"]
+            chain_atom_idx[chain_idx] - original_atom_idx[chain_idx] + token["atom_idx"]
         )
-        crop_to_all_atom_map.append(
-            np.arange(start, start + token["atom_num"])
-        )
+        crop_to_all_atom_map.append(np.arange(start, start + token["atom_num"]))
 
     # Compute the symmetries between chains
     swaps = []
@@ -542,15 +505,12 @@ def get_amino_acids_symmetries(cropped):
     swaps = []
     start_index_crop = 0
     for token in cropped.tokens:
-        symmetries = const.ref_symmetries.get(
-            const.tokens[token["res_type"]], []
-        )
+        symmetries = const.ref_symmetries.get(const.tokens[token["res_type"]], [])
         if len(symmetries) > 0:
             residue_swaps = []
             for sym in symmetries:
                 sym_new_idx = [
-                    (i + start_index_crop, j + start_index_crop)
-                    for i, j in sym
+                    (i + start_index_crop, j + start_index_crop) for i, j in sym
                 ]
                 residue_swaps.append(sym_new_idx)
             swaps.append(residue_swaps)
@@ -577,9 +537,7 @@ def get_ligand_symmetries(cropped, symmetries):
         added_molecules[mol_id] = token["atom_num"]
 
         # get the molecule type and indices
-        residue_idx = (
-            token["res_idx"] + structure.chains[token["asym_id"]]["res_idx"]
-        )
+        residue_idx = token["res_idx"] + structure.chains[token["asym_id"]]["res_idx"]
         mol_name = structure.residues[residue_idx]["name"]
         atom_idx = structure.residues[residue_idx]["atom_idx"]
         mol_atom_names = structure.atoms[
@@ -626,9 +584,7 @@ def get_ligand_symmetries(cropped, symmetries):
                             bool_add = False
                             break
                 if bool_add:
-                    syms.append(
-                        [sym_dict[i] for i in range(len(ccd_valid_ids))]
-                    )
+                    syms.append([sym_dict[i] for i in range(len(ccd_valid_ids))])
 
             for sym in syms:
                 if len(sym) != added_molecules[mol_id]:

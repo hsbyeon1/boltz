@@ -68,13 +68,10 @@ class AffinityCropper(Cropper):
             raise ValueError(msg)
 
         # compute minimum distance to ligand
-        ligand_coords = valid_tokens[valid_tokens["affinity_mask"]][
-            "center_coords"
-        ]
+        ligand_coords = valid_tokens[valid_tokens["affinity_mask"]]["center_coords"]
         dists = np.min(
             np.sum(
-                (valid_tokens["center_coords"][:, None] - ligand_coords[None])
-                ** 2,
+                (valid_tokens["center_coords"][:, None] - ligand_coords[None]) ** 2,
                 axis=-1,
             )
             ** 0.5,
@@ -100,9 +97,7 @@ class AffinityCropper(Cropper):
             token = valid_tokens[idx]
 
             # Get all tokens from this chain
-            chain_tokens = token_data[
-                token_data["asym_id"] == token["asym_id"]
-            ]
+            chain_tokens = token_data[token_data["asym_id"] == token["asym_id"]]
 
             # Pick the whole chain if possible, otherwise select
             # a contiguous subset centered at the query token
@@ -116,17 +111,11 @@ class AffinityCropper(Cropper):
                 max_idx = token["res_idx"] + self.neighborhood_size
 
                 max_token_set = chain_tokens
-                max_token_set = max_token_set[
-                    max_token_set["res_idx"] >= min_idx
-                ]
-                max_token_set = max_token_set[
-                    max_token_set["res_idx"] <= max_idx
-                ]
+                max_token_set = max_token_set[max_token_set["res_idx"] >= min_idx]
+                max_token_set = max_token_set[max_token_set["res_idx"] <= max_idx]
 
                 # Start by adding just the query token
-                new_tokens = max_token_set[
-                    max_token_set["res_idx"] == token["res_idx"]
-                ]
+                new_tokens = max_token_set[max_token_set["res_idx"] == token["res_idx"]]
 
                 # Expand the neighborhood until we have enough tokens, one
                 # by one to handle some edge cases with non-standard chains.
@@ -148,10 +137,7 @@ class AffinityCropper(Cropper):
             # Stop if we exceed the max number of tokens or atoms
             if (
                 (len(new_indices) > (max_tokens - len(cropped)))
-                or (
-                    (max_atoms is not None)
-                    and ((total_atoms + new_atoms) > max_atoms)
-                )
+                or ((max_atoms is not None) and ((total_atoms + new_atoms) > max_atoms))
                 or (
                     len(cropped_protein | new_indices - ligand_ids)
                     > self.max_tokens_protein

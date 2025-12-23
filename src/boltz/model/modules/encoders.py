@@ -61,9 +61,7 @@ class RelativePositionEncoder(Module):
         super().__init__()
         self.r_max = r_max
         self.s_max = s_max
-        self.linear_layer = LinearNoBias(
-            4 * (r_max + 1) + 2 * (s_max + 1) + 1, token_z
-        )
+        self.linear_layer = LinearNoBias(4 * (r_max + 1) + 2 * (s_max + 1) + 1, token_z)
 
     def forward(self, feats):
         b_same_chain = torch.eq(
@@ -77,8 +75,7 @@ class RelativePositionEncoder(Module):
             feats["entity_id"][:, :, None], feats["entity_id"][:, None, :]
         )
         rel_pos = (
-            feats["residue_index"][:, :, None]
-            - feats["residue_index"][:, None, :]
+            feats["residue_index"][:, :, None] - feats["residue_index"][:, None, :]
         )
         if torch.any(feats["cyclic_period"] != 0):
             period = torch.where(
@@ -116,9 +113,7 @@ class RelativePositionEncoder(Module):
         a_rel_token = one_hot(d_token, 2 * self.r_max + 2)
 
         d_chain = torch.clip(
-            feats["sym_id"][:, :, None]
-            - feats["sym_id"][:, None, :]
-            + self.s_max,
+            feats["sym_id"][:, :, None] - feats["sym_id"][:, None, :] + self.s_max,
             0,
             2 * self.s_max,
         )
@@ -178,10 +173,7 @@ class SingleConditioning(Module):
         self.sigma_data = sigma_data
 
         input_dim = (
-            2 * token_s
-            + 2 * const.num_tokens
-            + 1
-            + len(const.pocket_contact_info)
+            2 * token_s + 2 * const.num_tokens + 1 + len(const.pocket_contact_info)
         )
         self.norm_single = nn.LayerNorm(input_dim)
         self.single_embed = nn.Linear(input_dim, 2 * token_s)
@@ -294,9 +286,9 @@ def single_to_keys(single, indexing_matrix, W, H):
     B, N, D = single.shape
     K = N // W
     single = single.view(B, 2 * K, W // 2, D)
-    return torch.einsum(
-        "b j i d, j k -> b k i d", single, indexing_matrix
-    ).reshape(B, K, H, D)
+    return torch.einsum("b j i d, j k -> b k i d", single, indexing_matrix).reshape(
+        B, K, H, D
+    )
 
 
 class AtomAttentionEncoder(Module):
@@ -402,9 +394,7 @@ class AtomAttentionEncoder(Module):
         )
 
         self.atom_to_token_trans = nn.Sequential(
-            LinearNoBias(
-                atom_s, 2 * token_s if structure_prediction else token_s
-            ),
+            LinearNoBias(atom_s, 2 * token_s if structure_prediction else token_s),
             nn.ReLU(),
         )
 
@@ -463,9 +453,7 @@ class AtomAttentionEncoder(Module):
 
             atom_mask_queries = atom_mask.view(B, K, W, 1)
             atom_mask_keys = (
-                to_keys(atom_mask.unsqueeze(-1).float())
-                .view(B, K, 1, H)
-                .bool()
+                to_keys(atom_mask.unsqueeze(-1).float()).view(B, K, 1, H).bool()
             )
             atom_uid_queries = atom_uid.view(B, K, W, 1)
             atom_uid_keys = (
@@ -509,9 +497,7 @@ class AtomAttentionEncoder(Module):
                 p = p + z_to_p
 
             p = p + self.c_to_p_trans_q(c.view(B, K, W, 1, c.shape[-1]))
-            p = p + self.c_to_p_trans_k(
-                to_keys(c).view(B, K, 1, H, c.shape[-1])
-            )
+            p = p + self.c_to_p_trans_k(to_keys(c).view(B, K, 1, H, c.shape[-1]))
             p = p + self.p_mlp(p)
 
             if model_cache is not None:

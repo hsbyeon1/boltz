@@ -64,14 +64,11 @@ def factored_lddt_loss(
     pair_mask = atom_mask[:, :, None] * atom_mask[:, None, :]
     pair_mask = (
         pair_mask
-        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[
-            None, :, :
-        ]
+        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[None, :, :]
     )
 
     cutoff = 15 + 15 * (
-        1
-        - (1 - nucleotide_mask[:, :, None]) * (1 - nucleotide_mask[:, None, :])
+        1 - (1 - nucleotide_mask[:, :, None]) * (1 - nucleotide_mask[:, None, :])
     )
 
     # compute different lddts
@@ -121,29 +118,21 @@ def factored_lddt_loss(
     del rna_ligand_mask
 
     intra_dna_mask = pair_mask * (dna_mask[:, :, None] * dna_mask[:, None, :])
-    intra_dna_lddt, intra_dna_total = lddt_dist(
-        pred_d, true_d, intra_dna_mask, cutoff
-    )
+    intra_dna_lddt, intra_dna_total = lddt_dist(pred_d, true_d, intra_dna_mask, cutoff)
     del intra_dna_mask
 
     intra_rna_mask = pair_mask * (rna_mask[:, :, None] * rna_mask[:, None, :])
-    intra_rna_lddt, intra_rna_total = lddt_dist(
-        pred_d, true_d, intra_rna_mask, cutoff
-    )
+    intra_rna_lddt, intra_rna_total = lddt_dist(pred_d, true_d, intra_rna_mask, cutoff)
     del intra_rna_mask
 
     chain_id = feats["asym_id"]
     atom_chain_id = (
-        torch.bmm(
-            feats["atom_to_token"].float(), chain_id.unsqueeze(-1).float()
-        )
+        torch.bmm(feats["atom_to_token"].float(), chain_id.unsqueeze(-1).float())
         .squeeze(-1)
         .long()
     )
     atom_chain_id = atom_chain_id.repeat_interleave(multiplicity, 0)
-    same_chain_mask = (
-        atom_chain_id[:, :, None] == atom_chain_id[:, None, :]
-    ).float()
+    same_chain_mask = (atom_chain_id[:, :, None] == atom_chain_id[:, None, :]).float()
 
     intra_ligand_mask = (
         pair_mask
@@ -207,9 +196,7 @@ def factored_lddt_loss(
     return lddt_dict, total_dict
 
 
-def factored_token_lddt_dist_loss(
-    true_d, pred_d, feats, cardinality_weighted=False
-):
+def factored_token_lddt_dist_loss(true_d, pred_d, feats, cardinality_weighted=False):
     """Compute the distogram lddt factorized into the different modalities.
 
     Parameters
@@ -240,13 +227,10 @@ def factored_token_lddt_dist_loss(
 
     token_mask = feats["token_disto_mask"]
     token_mask = token_mask[:, :, None] * token_mask[:, None, :]
-    token_mask = token_mask * (1 - torch.eye(token_mask.shape[1])[None]).to(
-        token_mask
-    )
+    token_mask = token_mask * (1 - torch.eye(token_mask.shape[1])[None]).to(token_mask)
 
     cutoff = 15 + 15 * (
-        1
-        - (1 - nucleotide_mask[:, :, None]) * (1 - nucleotide_mask[:, None, :])
+        1 - (1 - nucleotide_mask[:, :, None]) * (1 - nucleotide_mask[:, None, :])
     )
 
     # compute different lddts
@@ -302,14 +286,10 @@ def factored_token_lddt_dist_loss(
     )
 
     intra_dna_mask = token_mask * (dna_mask[:, :, None] * dna_mask[:, None, :])
-    intra_dna_lddt, intra_dna_total = lddt_dist(
-        pred_d, true_d, intra_dna_mask, cutoff
-    )
+    intra_dna_lddt, intra_dna_total = lddt_dist(pred_d, true_d, intra_dna_mask, cutoff)
 
     intra_rna_mask = token_mask * (rna_mask[:, :, None] * rna_mask[:, None, :])
-    intra_rna_lddt, intra_rna_total = lddt_dist(
-        pred_d, true_d, intra_rna_mask, cutoff
-    )
+    intra_rna_lddt, intra_rna_total = lddt_dist(pred_d, true_d, intra_rna_mask, cutoff)
 
     chain_id = feats["asym_id"]
     same_chain_mask = (chain_id[:, :, None] == chain_id[:, None, :]).float()
@@ -401,15 +381,13 @@ def compute_plddt_mae(
     # extract necessary features
     atom_mask = true_coords_resolved_mask
     R_set_to_rep_atom = feats["r_set_to_rep_atom"]
-    R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(
-        multiplicity, 0
-    ).float()
+    R_set_to_rep_atom = R_set_to_rep_atom.repeat_interleave(multiplicity, 0).float()
 
     token_type = feats["mol_type"]
     token_type = token_type.repeat_interleave(multiplicity, 0)
-    is_nucleotide_token = (
-        token_type == const.chain_type_ids["DNA"]
-    ).float() + (token_type == const.chain_type_ids["RNA"]).float()
+    is_nucleotide_token = (token_type == const.chain_type_ids["DNA"]).float() + (
+        token_type == const.chain_type_ids["RNA"]
+    ).float()
 
     B = true_atom_coords.shape[0]
 
@@ -435,16 +413,14 @@ def compute_plddt_mae(
     pair_mask = atom_mask.unsqueeze(-1) * atom_mask.unsqueeze(-2)
     pair_mask = (
         pair_mask
-        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[
-            None, :, :
-        ]
+        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[None, :, :]
     )
     pair_mask = torch.einsum("bnm,bkm->bnk", pair_mask, R_set_to_rep_atom)
 
     pair_mask = torch.bmm(token_to_rep_atom, pair_mask)
-    atom_mask = torch.bmm(
-        token_to_rep_atom, atom_mask.unsqueeze(-1).float()
-    ).squeeze(-1)
+    atom_mask = torch.bmm(token_to_rep_atom, atom_mask.unsqueeze(-1).float()).squeeze(
+        -1
+    )
     is_nucleotide_R_element = torch.bmm(
         R_set_to_rep_atom,
         torch.bmm(atom_to_token, is_nucleotide_token.unsqueeze(-1)),
@@ -468,23 +444,19 @@ def compute_plddt_mae(
         * mask_no_match
     )
     dna_mask = (
-        (token_type == const.chain_type_ids["DNA"]).float()
-        * atom_mask
-        * mask_no_match
+        (token_type == const.chain_type_ids["DNA"]).float() * atom_mask * mask_no_match
     )
     rna_mask = (
-        (token_type == const.chain_type_ids["RNA"]).float()
-        * atom_mask
-        * mask_no_match
+        (token_type == const.chain_type_ids["RNA"]).float() * atom_mask * mask_no_match
     )
 
-    protein_mae = torch.sum(
-        torch.abs(target_lddt - pred_lddt) * protein_mask
-    ) / (torch.sum(protein_mask) + 1e-5)
+    protein_mae = torch.sum(torch.abs(target_lddt - pred_lddt) * protein_mask) / (
+        torch.sum(protein_mask) + 1e-5
+    )
     protein_total = torch.sum(protein_mask)
-    ligand_mae = torch.sum(
-        torch.abs(target_lddt - pred_lddt) * ligand_mask
-    ) / (torch.sum(ligand_mask) + 1e-5)
+    ligand_mae = torch.sum(torch.abs(target_lddt - pred_lddt) * ligand_mask) / (
+        torch.sum(ligand_mask) + 1e-5
+    )
     ligand_total = torch.sum(ligand_mask)
     dna_mae = torch.sum(torch.abs(target_lddt - pred_lddt) * dna_mask) / (
         torch.sum(dna_mask) + 1e-5
@@ -572,9 +544,7 @@ def compute_pde_mae(
     pair_mask = token_mask.unsqueeze(-1) * token_mask.unsqueeze(-2)
     pair_mask = (
         pair_mask
-        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[
-            None, :, :
-        ]
+        * (1 - torch.eye(pair_mask.shape[1], device=pair_mask.device))[None, :, :]
     )
 
     protein_mask = (token_type == const.chain_type_ids["PROTEIN"]).float()
@@ -587,18 +557,18 @@ def compute_pde_mae(
         dna_mask[:, :, None] * protein_mask[:, None, :]
         + protein_mask[:, :, None] * dna_mask[:, None, :]
     )
-    dna_protein_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * dna_protein_mask
-    ) / (torch.sum(dna_protein_mask) + 1e-5)
+    dna_protein_mae = torch.sum(torch.abs(target_pde - pred_pde) * dna_protein_mask) / (
+        torch.sum(dna_protein_mask) + 1e-5
+    )
     dna_protein_total = torch.sum(dna_protein_mask)
 
     rna_protein_mask = pair_mask * (
         rna_mask[:, :, None] * protein_mask[:, None, :]
         + protein_mask[:, :, None] * rna_mask[:, None, :]
     )
-    rna_protein_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * rna_protein_mask
-    ) / (torch.sum(rna_protein_mask) + 1e-5)
+    rna_protein_mae = torch.sum(torch.abs(target_pde - pred_pde) * rna_protein_mask) / (
+        torch.sum(rna_protein_mask) + 1e-5
+    )
     rna_protein_total = torch.sum(rna_protein_mask)
 
     ligand_protein_mask = pair_mask * (
@@ -614,38 +584,36 @@ def compute_pde_mae(
         dna_mask[:, :, None] * ligand_mask[:, None, :]
         + ligand_mask[:, :, None] * dna_mask[:, None, :]
     )
-    dna_ligand_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * dna_ligand_mask
-    ) / (torch.sum(dna_ligand_mask) + 1e-5)
+    dna_ligand_mae = torch.sum(torch.abs(target_pde - pred_pde) * dna_ligand_mask) / (
+        torch.sum(dna_ligand_mask) + 1e-5
+    )
     dna_ligand_total = torch.sum(dna_ligand_mask)
 
     rna_ligand_mask = pair_mask * (
         rna_mask[:, :, None] * ligand_mask[:, None, :]
         + ligand_mask[:, :, None] * rna_mask[:, None, :]
     )
-    rna_ligand_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * rna_ligand_mask
-    ) / (torch.sum(rna_ligand_mask) + 1e-5)
+    rna_ligand_mae = torch.sum(torch.abs(target_pde - pred_pde) * rna_ligand_mask) / (
+        torch.sum(rna_ligand_mask) + 1e-5
+    )
     rna_ligand_total = torch.sum(rna_ligand_mask)
 
-    intra_ligand_mask = pair_mask * (
-        ligand_mask[:, :, None] * ligand_mask[:, None, :]
-    )
+    intra_ligand_mask = pair_mask * (ligand_mask[:, :, None] * ligand_mask[:, None, :])
     intra_ligand_mae = torch.sum(
         torch.abs(target_pde - pred_pde) * intra_ligand_mask
     ) / (torch.sum(intra_ligand_mask) + 1e-5)
     intra_ligand_total = torch.sum(intra_ligand_mask)
 
     intra_dna_mask = pair_mask * (dna_mask[:, :, None] * dna_mask[:, None, :])
-    intra_dna_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * intra_dna_mask
-    ) / (torch.sum(intra_dna_mask) + 1e-5)
+    intra_dna_mae = torch.sum(torch.abs(target_pde - pred_pde) * intra_dna_mask) / (
+        torch.sum(intra_dna_mask) + 1e-5
+    )
     intra_dna_total = torch.sum(intra_dna_mask)
 
     intra_rna_mask = pair_mask * (rna_mask[:, :, None] * rna_mask[:, None, :])
-    intra_rna_mae = torch.sum(
-        torch.abs(target_pde - pred_pde) * intra_rna_mask
-    ) / (torch.sum(intra_rna_mask) + 1e-5)
+    intra_rna_mae = torch.sum(torch.abs(target_pde - pred_pde) * intra_rna_mask) / (
+        torch.sum(intra_rna_mask) + 1e-5
+    )
     intra_rna_total = torch.sum(intra_rna_mask)
 
     chain_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
@@ -753,9 +721,7 @@ def compute_pae_mae(
     )
     # Compute token coords in true frames
     B, N, _ = true_atom_coords.shape
-    true_atom_coords = true_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    true_atom_coords = true_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     true_coords_transformed = express_coordinate_in_frame(
         true_atom_coords,
         frame_true_atom_a,
@@ -774,9 +740,7 @@ def compute_pae_mae(
     )
     # Compute token coords in pred frames
     B, N, _ = pred_atom_coords.shape
-    pred_atom_coords = pred_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    pred_atom_coords = pred_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     pred_coords_transformed = express_coordinate_in_frame(
         pred_atom_coords,
         frame_pred_atom_a,
@@ -785,13 +749,10 @@ def compute_pae_mae(
     )
 
     target_pae_continuous = torch.sqrt(
-        ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1)
-        + 1e-8
+        ((true_coords_transformed - pred_coords_transformed) ** 2).sum(-1) + 1e-8
     )
     target_pae = (
-        torch.clamp(
-            torch.floor(target_pae_continuous * 64 / 32).long(), max=63
-        ).float()
+        torch.clamp(torch.floor(target_pae_continuous * 64 / 32).long(), max=63).float()
         * 0.5
         + 0.25
     )
@@ -826,18 +787,18 @@ def compute_pae_mae(
         dna_mask[:, :, None] * protein_mask[:, None, :]
         + protein_mask[:, :, None] * dna_mask[:, None, :]
     )
-    dna_protein_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * dna_protein_mask
-    ) / (torch.sum(dna_protein_mask) + 1e-5)
+    dna_protein_mae = torch.sum(torch.abs(target_pae - pred_pae) * dna_protein_mask) / (
+        torch.sum(dna_protein_mask) + 1e-5
+    )
     dna_protein_total = torch.sum(dna_protein_mask)
 
     rna_protein_mask = pair_mask * (
         rna_mask[:, :, None] * protein_mask[:, None, :]
         + protein_mask[:, :, None] * rna_mask[:, None, :]
     )
-    rna_protein_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * rna_protein_mask
-    ) / (torch.sum(rna_protein_mask) + 1e-5)
+    rna_protein_mae = torch.sum(torch.abs(target_pae - pred_pae) * rna_protein_mask) / (
+        torch.sum(rna_protein_mask) + 1e-5
+    )
     rna_protein_total = torch.sum(rna_protein_mask)
 
     ligand_protein_mask = pair_mask * (
@@ -853,38 +814,36 @@ def compute_pae_mae(
         dna_mask[:, :, None] * ligand_mask[:, None, :]
         + ligand_mask[:, :, None] * dna_mask[:, None, :]
     )
-    dna_ligand_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * dna_ligand_mask
-    ) / (torch.sum(dna_ligand_mask) + 1e-5)
+    dna_ligand_mae = torch.sum(torch.abs(target_pae - pred_pae) * dna_ligand_mask) / (
+        torch.sum(dna_ligand_mask) + 1e-5
+    )
     dna_ligand_total = torch.sum(dna_ligand_mask)
 
     rna_ligand_mask = pair_mask * (
         rna_mask[:, :, None] * ligand_mask[:, None, :]
         + ligand_mask[:, :, None] * rna_mask[:, None, :]
     )
-    rna_ligand_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * rna_ligand_mask
-    ) / (torch.sum(rna_ligand_mask) + 1e-5)
+    rna_ligand_mae = torch.sum(torch.abs(target_pae - pred_pae) * rna_ligand_mask) / (
+        torch.sum(rna_ligand_mask) + 1e-5
+    )
     rna_ligand_total = torch.sum(rna_ligand_mask)
 
-    intra_ligand_mask = pair_mask * (
-        ligand_mask[:, :, None] * ligand_mask[:, None, :]
-    )
+    intra_ligand_mask = pair_mask * (ligand_mask[:, :, None] * ligand_mask[:, None, :])
     intra_ligand_mae = torch.sum(
         torch.abs(target_pae - pred_pae) * intra_ligand_mask
     ) / (torch.sum(intra_ligand_mask) + 1e-5)
     intra_ligand_total = torch.sum(intra_ligand_mask)
 
     intra_dna_mask = pair_mask * (dna_mask[:, :, None] * dna_mask[:, None, :])
-    intra_dna_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * intra_dna_mask
-    ) / (torch.sum(intra_dna_mask) + 1e-5)
+    intra_dna_mae = torch.sum(torch.abs(target_pae - pred_pae) * intra_dna_mask) / (
+        torch.sum(intra_dna_mask) + 1e-5
+    )
     intra_dna_total = torch.sum(intra_dna_mask)
 
     intra_rna_mask = pair_mask * (rna_mask[:, :, None] * rna_mask[:, None, :])
-    intra_rna_mae = torch.sum(
-        torch.abs(target_pae - pred_pae) * intra_rna_mask
-    ) / (torch.sum(intra_rna_mask) + 1e-5)
+    intra_rna_mae = torch.sum(torch.abs(target_pae - pred_pae) * intra_rna_mask) / (
+        torch.sum(intra_rna_mask) + 1e-5
+    )
     intra_rna_total = torch.sum(intra_rna_mask)
 
     chain_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
@@ -999,9 +958,7 @@ def weighted_minimum_rmsd(
         )
 
     # weighted MSE loss of denoised atom positions
-    mse_loss = (
-        (pred_atom_coords - atom_coords_aligned_ground_truth) ** 2
-    ).sum(dim=-1)
+    mse_loss = ((pred_atom_coords - atom_coords_aligned_ground_truth) ** 2).sum(dim=-1)
     rmsd = torch.sqrt(
         torch.sum(mse_loss * align_weights * atom_mask, dim=-1)
         / torch.sum(align_weights * atom_mask, dim=-1)
@@ -1069,9 +1026,7 @@ def weighted_minimum_rmsd_single(
         )
 
     # weighted MSE loss of denoised atom positions
-    mse_loss = (
-        (pred_atom_coords - atom_coords_aligned_ground_truth) ** 2
-    ).sum(dim=-1)
+    mse_loss = ((pred_atom_coords - atom_coords_aligned_ground_truth) ** 2).sum(dim=-1)
     rmsd = torch.sqrt(
         torch.sum(mse_loss * align_weights * atom_mask, dim=-1)
         / torch.sum(align_weights * atom_mask, dim=-1)

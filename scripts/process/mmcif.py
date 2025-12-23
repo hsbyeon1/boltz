@@ -318,9 +318,7 @@ def compute_covalent_ligands(
     return covalent_chain_ids
 
 
-def compute_interfaces(
-    atom_data: np.ndarray, chain_data: np.ndarray
-) -> np.ndarray:
+def compute_interfaces(atom_data: np.ndarray, chain_data: np.ndarray) -> np.ndarray:
     """Compute the chain-chain interfaces from a gemmi structure.
 
     Parameters
@@ -1075,12 +1073,8 @@ def parse_mmcif(  # noqa: C901, PLR0915, PLR0912
     for conn in connections:
         chain_1_idx = chain_to_idx[conn.chain_1]
         chain_2_idx = chain_to_idx[conn.chain_2]
-        res_1_idx, atom_1_offset = res_to_idx[
-            (conn.chain_1, conn.residue_index_1)
-        ]
-        res_2_idx, atom_2_offset = res_to_idx[
-            (conn.chain_2, conn.residue_index_2)
-        ]
+        res_1_idx, atom_1_offset = res_to_idx[(conn.chain_1, conn.residue_index_1)]
+        res_2_idx, atom_2_offset = res_to_idx[(conn.chain_2, conn.residue_index_2)]
         atom_1_idx = atom_1_offset + conn.atom_index_1
         atom_2_idx = atom_2_offset + conn.atom_index_2
         connection_data.append(

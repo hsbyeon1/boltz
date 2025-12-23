@@ -1,6 +1,7 @@
 import math
-from typing import Optional
 from collections import deque
+from typing import Optional
+
 import numba
 import numpy as np
 import numpy.typing as npt
@@ -131,8 +132,7 @@ def compute_frames_nonpolymer(
         num_tokens = mask_chain_token.sum()
         num_atoms = mask_chain_atom.sum()
         if (
-            data.tokens[token_idx]["mol_type"]
-            != const.chain_type_ids["NONPOLYMER"]
+            data.tokens[token_idx]["mol_type"] != const.chain_type_ids["NONPOLYMER"]
             or num_atoms < 3  # noqa: PLR2004
         ):
             token_idx += num_tokens
@@ -263,9 +263,7 @@ def construct_paired_msa(  # noqa: C901, PLR0915, PLR0912
             msa_residues = data.msa[chain_id].residues
             first_residues = msa_residues[first_start:first_end]
 
-            warning = (
-                "Warning: MSA does not match input sequence, creating dummy."
-            )
+            warning = "Warning: MSA does not match input sequence, creating dummy."
             if len(residues) == len(first_residues):
                 # If there is a mismatch, check if it is between MET & UNK
                 # If so, replace the first sequence with the input sequence.
@@ -273,22 +271,15 @@ def construct_paired_msa(  # noqa: C901, PLR0915, PLR0912
                 mismatches = residues["res_type"] != first_residues["res_type"]
                 if mismatches.sum().item():
                     idx = np.where(mismatches)[0]
-                    is_met = (
-                        residues["res_type"][idx] == const.token_ids["MET"]
-                    )
-                    is_unk = (
-                        residues["res_type"][idx] == const.token_ids["UNK"]
-                    )
+                    is_met = residues["res_type"][idx] == const.token_ids["MET"]
+                    is_unk = residues["res_type"][idx] == const.token_ids["UNK"]
                     is_msa_unk = (
-                        first_residues["res_type"][idx]
-                        == const.token_ids["UNK"]
+                        first_residues["res_type"][idx] == const.token_ids["UNK"]
                     )
-                    if (np.all(is_met) and np.all(is_msa_unk)) or np.all(
-                        is_unk
-                    ):
-                        msa_residues[first_start:first_end]["res_type"] = (
-                            residues["res_type"]
-                        )
+                    if (np.all(is_met) and np.all(is_msa_unk)) or np.all(is_unk):
+                        msa_residues[first_start:first_end]["res_type"] = residues[
+                            "res_type"
+                        ]
                     else:
                         print(
                             warning,
@@ -465,16 +456,10 @@ def prepare_msa_arrays(
     is_paired: list[dict[int, int]],
     deletions: dict[tuple[int, int, int], int],
     msa: dict[int, MSA],
-) -> tuple[
-    npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]
-]:
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     """Reshape data to play nicely with numba jit."""
-    token_asym_ids_arr = np.array(
-        [t["asym_id"] for t in tokens], dtype=np.int64
-    )
-    token_res_idxs_arr = np.array(
-        [t["res_idx"] for t in tokens], dtype=np.int64
-    )
+    token_asym_ids_arr = np.array([t["asym_id"] for t in tokens], dtype=np.int64)
+    token_res_idxs_arr = np.array([t["res_idx"] for t in tokens], dtype=np.int64)
 
     chain_ids = sorted(msa.keys())
 
@@ -495,9 +480,7 @@ def prepare_msa_arrays(
 
     for i, row_is_paired in enumerate(is_paired):
         for chain_id in chain_ids:
-            is_paired_arr[i, chain_id_to_idx[chain_id]] = row_is_paired[
-                chain_id
-            ]
+            is_paired_arr[i, chain_id_to_idx[chain_id]] = row_is_paired[chain_id]
 
     max_seq_len = max(len(msa[chain_id].sequences) for chain_id in chain_ids)
 
@@ -507,12 +490,8 @@ def prepare_msa_arrays(
         for i, seq in enumerate(msa[chain_id].sequences):
             msa_sequences[chain_id_to_idx[chain_id], i] = seq["res_start"]
 
-    max_residues_len = max(
-        len(msa[chain_id].residues) for chain_id in chain_ids
-    )
-    msa_residues = np.full(
-        (len(chain_ids), max_residues_len), -1, dtype=np.int64
-    )
+    max_residues_len = max(len(msa[chain_id].residues) for chain_id in chain_ids)
+    msa_residues = np.full((len(chain_ids), max_residues_len), -1, dtype=np.int64)
     for chain_id in chain_ids:
         residues = msa[chain_id].residues.astype(np.int64)
         idxs = np.arange(len(residues))
@@ -532,9 +511,7 @@ def prepare_msa_arrays(
     )
 
 
-deletions_dict_type = types.DictType(
-    types.UniTuple(types.int64, 3), types.int64
-)
+deletions_dict_type = types.DictType(types.UniTuple(types.int64, 3), types.int64)
 
 
 @numba.njit(
@@ -569,9 +546,7 @@ def _prepare_msa_arrays_inner(
     msa_sequences: npt.NDArray[np.int64],
     msa_residues: npt.NDArray[np.int64],
     gap_token: int,
-) -> tuple[
-    npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]
-]:
+) -> tuple[npt.NDArray[np.int64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     n_tokens = len(token_asym_ids)
     n_pairs = len(pairing)
     msa_data = np.full((n_tokens, n_pairs), gap_token, dtype=np.int64)
@@ -586,9 +561,7 @@ def _prepare_msa_arrays_inner(
 
         for pair_idx in range(n_pairs):
             seq_idx = pairing[pair_idx, chain_id_idx]
-            paired_data[token_idx, pair_idx] = is_paired[
-                pair_idx, chain_id_idx
-            ]
+            paired_data[token_idx, pair_idx] = is_paired[pair_idx, chain_id_idx]
 
             # Add residue type
             if seq_idx != -1:
@@ -607,9 +580,7 @@ def _prepare_msa_arrays_inner(
 ####################################################################################################
 
 
-def select_subset_from_mask(
-    mask, p, random: np.random.Generator
-) -> np.ndarray:
+def select_subset_from_mask(mask, p, random: np.random.Generator) -> np.ndarray:
     num_true = np.sum(mask)
     v = random.geometric(p) + 1
     k = min(v, num_true)
@@ -625,9 +596,7 @@ def select_subset_from_mask(
     return new_mask
 
 
-def get_range_bin(
-    value: float, range_dict: dict[tuple[float, float], int], default=0
-):
+def get_range_bin(value: float, range_dict: dict[tuple[float, float], int], default=0):
     """Get the bin of a value given a range dictionary."""
     value = float(value)
     for k, idx in range_dict.items():
@@ -790,15 +759,11 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                 ):
                     for idx2, _token2 in enumerate(token_data):
                         if (
-                            _token2["mol_type"]
-                            != const.chain_type_ids["NONPOLYMER"]
-                            and (_token2["asym_id"], _token2["res_idx"])
-                            == token2
+                            _token2["mol_type"] != const.chain_type_ids["NONPOLYMER"]
+                            and (_token2["asym_id"], _token2["res_idx"]) == token2
                         ) or (
-                            _token2["mol_type"]
-                            == const.chain_type_ids["NONPOLYMER"]
-                            and (_token2["asym_id"], _token2["atom_idx"])
-                            == token2
+                            _token2["mol_type"] == const.chain_type_ids["NONPOLYMER"]
+                            and (_token2["asym_id"], _token2["atom_idx"]) == token2
                         ):
                             contact_conditioning[idx1, idx2] = (
                                 const.contact_conditioning_info["CONTACT"]
@@ -828,9 +793,7 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                 break
 
             pocket_asym_id = random.choice(binder_asym_ids)
-            binder_asym_ids = binder_asym_ids[
-                binder_asym_ids != pocket_asym_id
-            ]
+            binder_asym_ids = binder_asym_ids[binder_asym_ids != pocket_asym_id]
 
             binder_pocket_cutoff = sample_d(
                 min_d=binder_pocket_cutoff_min,
@@ -845,12 +808,10 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
             for token in token_data:
                 if token["asym_id"] == pocket_asym_id:
                     _coords = data.structure.atoms["coords"][
-                        token["atom_idx"] : token["atom_idx"]
-                        + token["atom_num"]
+                        token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                     ]
                     _is_present = data.structure.atoms["is_present"][
-                        token["atom_idx"] : token["atom_idx"]
-                        + token["atom_num"]
+                        token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                     ]
                     binder_coords.append(_coords[_is_present])
             binder_coords = np.concatenate(binder_coords, axis=0)
@@ -864,12 +825,10 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                     and token["resolved_mask"] == 1
                 ):
                     token_coords = data.structure.atoms["coords"][
-                        token["atom_idx"] : token["atom_idx"]
-                        + token["atom_num"]
+                        token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                     ]
                     token_is_present = data.structure.atoms["is_present"][
-                        token["atom_idx"] : token["atom_idx"]
-                        + token["atom_num"]
+                        token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                     ]
                     token_coords = token_coords[token_is_present]
 
@@ -880,8 +839,7 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
 
                     token_dist[i] = np.min(
                         np.linalg.norm(
-                            token_coords[:, None, :]
-                            - binder_coords[None, :, :],
+                            token_coords[:, None, :] - binder_coords[None, :, :],
                             axis=-1,
                         )
                     )
@@ -923,8 +881,7 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
             if only_pp_contact:
                 chain_asym_ids = np.unique(
                     token_data["asym_id"][
-                        token_data["mol_type"]
-                        == const.chain_type_ids["PROTEIN"]
+                        token_data["mol_type"] == const.chain_type_ids["PROTEIN"]
                     ]
                 )
             else:
@@ -937,21 +894,17 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                 for token in token_data:
                     if token["asym_id"] == chain_asym_id:
                         _coords = data.structure.atoms["coords"][
-                            token["atom_idx"] : token["atom_idx"]
-                            + token["atom_num"]
+                            token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                         ]
                         _is_present = data.structure.atoms["is_present"][
-                            token["atom_idx"] : token["atom_idx"]
-                            + token["atom_num"]
+                            token["atom_idx"] : token["atom_idx"] + token["atom_num"]
                         ]
                         chain_coords.append(_coords[_is_present])
                 chain_coords = np.concatenate(chain_coords, axis=0)
 
                 # find contacts in other chains
                 possible_other_chains = []
-                for other_chain_id in chain_asym_ids[
-                    chain_asym_ids != chain_asym_id
-                ]:
+                for other_chain_id in chain_asym_ids[chain_asym_ids != chain_asym_id]:
                     for token in token_data:
                         if token["asym_id"] == other_chain_id:
                             _coords = data.structure.atoms["coords"][
@@ -995,17 +948,11 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                             for token_2 in token_data:
                                 if token_2["asym_id"] == other_chain_id:
                                     _coords = data.structure.atoms["coords"][
-                                        token_2["atom_idx"] : token_2[
-                                            "atom_idx"
-                                        ]
+                                        token_2["atom_idx"] : token_2["atom_idx"]
                                         + token_2["atom_num"]
                                     ]
-                                    _is_present = data.structure.atoms[
-                                        "is_present"
-                                    ][
-                                        token_2["atom_idx"] : token_2[
-                                            "atom_idx"
-                                        ]
+                                    _is_present = data.structure.atoms["is_present"][
+                                        token_2["atom_idx"] : token_2["atom_idx"]
                                         + token_2["atom_num"]
                                     ]
                                     if _is_present.sum() == 0:
@@ -1013,11 +960,7 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                                     token_2_coords = _coords[_is_present]
 
                                     if (
-                                        np.min(
-                                            cdist(
-                                                token_1_coords, token_2_coords
-                                            )
-                                        )
+                                        np.min(cdist(token_1_coords, token_2_coords))
                                         < contact_cutoff
                                     ):
                                         pairs.append(
@@ -1033,34 +976,29 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                     token_1_mask = token_data["token_idx"] == pair[0]
                     token_2_mask = token_data["token_idx"] == pair[1]
 
-                    contact_conditioning[
-                        np.ix_(token_1_mask, token_2_mask)
-                    ] = const.contact_conditioning_info["CONTACT"]
-                    contact_conditioning[
-                        np.ix_(token_2_mask, token_1_mask)
-                    ] = const.contact_conditioning_info["CONTACT"]
+                    contact_conditioning[np.ix_(token_1_mask, token_2_mask)] = (
+                        const.contact_conditioning_info["CONTACT"]
+                    )
+                    contact_conditioning[np.ix_(token_2_mask, token_1_mask)] = (
+                        const.contact_conditioning_info["CONTACT"]
+                    )
 
             elif not only_pp_contact:
                 # only one chain, find contacts within the chain with minimum residue distance
                 pairs = []
                 for token_1 in token_data:
                     _coords = data.structure.atoms["coords"][
-                        token_1["atom_idx"] : token_1["atom_idx"]
-                        + token_1["atom_num"]
+                        token_1["atom_idx"] : token_1["atom_idx"] + token_1["atom_num"]
                     ]
                     _is_present = data.structure.atoms["is_present"][
-                        token_1["atom_idx"] : token_1["atom_idx"]
-                        + token_1["atom_num"]
+                        token_1["atom_idx"] : token_1["atom_idx"] + token_1["atom_num"]
                     ]
                     if _is_present.sum() == 0:
                         continue
                     token_1_coords = _coords[_is_present]
 
                     for token_2 in token_data:
-                        if (
-                            np.abs(token_1["res_idx"] - token_2["res_idx"])
-                            <= 8
-                        ):
+                        if np.abs(token_1["res_idx"] - token_2["res_idx"]) <= 8:
                             continue
 
                         _coords = data.structure.atoms["coords"][
@@ -1079,25 +1017,21 @@ def process_token_features(  # noqa: C901, PLR0915, PLR0912
                             np.min(cdist(token_1_coords, token_2_coords))
                             < contact_cutoff
                         ):
-                            pairs.append(
-                                (token_1["token_idx"], token_2["token_idx"])
-                            )
+                            pairs.append((token_1["token_idx"], token_2["token_idx"]))
 
                 if len(pairs) > 0:
                     pair = random.choice(pairs)
                     token_1_mask = token_data["token_idx"] == pair[0]
                     token_2_mask = token_data["token_idx"] == pair[1]
 
-                    contact_conditioning[
-                        np.ix_(token_1_mask, token_2_mask)
-                    ] = const.contact_conditioning_info["CONTACT"]
-                    contact_conditioning[
-                        np.ix_(token_2_mask, token_1_mask)
-                    ] = const.contact_conditioning_info["CONTACT"]
+                    contact_conditioning[np.ix_(token_1_mask, token_2_mask)] = (
+                        const.contact_conditioning_info["CONTACT"]
+                    )
+                    contact_conditioning[np.ix_(token_2_mask, token_1_mask)] = (
+                        const.contact_conditioning_info["CONTACT"]
+                    )
 
-    if np.all(
-        contact_conditioning == const.contact_conditioning_info["UNSELECTED"]
-    ):
+    if np.all(contact_conditioning == const.contact_conditioning_info["UNSELECTED"]):
         contact_conditioning = (
             contact_conditioning
             - const.contact_conditioning_info["UNSELECTED"]
@@ -1292,18 +1226,10 @@ def process_atom_features(
 
         # Add atom ref data
         # element, charge, conformer, chirality
-        token_atom_name = np.array(
-            [convert_atom_name(a["name"]) for a in token_atoms]
-        )
-        token_atoms_ref = np.array(
-            [atom_name_to_ref[a["name"]] for a in token_atoms]
-        )
-        token_atoms_element = np.array(
-            [a.GetAtomicNum() for a in token_atoms_ref]
-        )
-        token_atoms_charge = np.array(
-            [a.GetFormalCharge() for a in token_atoms_ref]
-        )
+        token_atom_name = np.array([convert_atom_name(a["name"]) for a in token_atoms])
+        token_atoms_ref = np.array([atom_name_to_ref[a["name"]] for a in token_atoms])
+        token_atoms_element = np.array([a.GetAtomicNum() for a in token_atoms_ref])
+        token_atoms_charge = np.array([a.GetFormalCharge() for a in token_atoms_ref])
         token_atoms_conformer = np.array(
             [
                 (
@@ -1316,9 +1242,7 @@ def process_atom_features(
         )
         token_atoms_chirality = np.array(
             [
-                const.chirality_type_ids.get(
-                    a.GetChiralTag().name, unk_chirality
-                )
+                const.chirality_type_ids.get(a.GetChiralTag().name, unk_chirality)
                 for a in token_atoms_ref
             ]
         )
@@ -1409,25 +1333,19 @@ def process_atom_features(
                 is_ca = token_atoms["name"] == "CA"
                 idx_frame_a = is_ca.argmax()
                 ca_present = (
-                    token_atoms[idx_frame_a]["is_present"]
-                    if is_ca.any()
-                    else False
+                    token_atoms[idx_frame_a]["is_present"] if is_ca.any() else False
                 )
 
                 is_n = token_atoms["name"] == "N"
                 idx_frame_b = is_n.argmax()
                 n_present = (
-                    token_atoms[idx_frame_b]["is_present"]
-                    if is_n.any()
-                    else False
+                    token_atoms[idx_frame_b]["is_present"] if is_n.any() else False
                 )
 
                 is_c = token_atoms["name"] == "C"
                 idx_frame_c = is_c.argmax()
                 c_present = (
-                    token_atoms[idx_frame_c]["is_present"]
-                    if is_c.any()
-                    else False
+                    token_atoms[idx_frame_c]["is_present"] if is_c.any() else False
                 )
                 mask_frame = ca_present and n_present and c_present
 
@@ -1438,25 +1356,19 @@ def process_atom_features(
                 is_c1 = token_atoms["name"] == "C1'"
                 idx_frame_a = is_c1.argmax()
                 c1_present = (
-                    token_atoms[idx_frame_a]["is_present"]
-                    if is_c1.any()
-                    else False
+                    token_atoms[idx_frame_a]["is_present"] if is_c1.any() else False
                 )
 
                 is_c3 = token_atoms["name"] == "C3'"
                 idx_frame_b = is_c3.argmax()
                 c3_present = (
-                    token_atoms[idx_frame_b]["is_present"]
-                    if is_c3.any()
-                    else False
+                    token_atoms[idx_frame_b]["is_present"] if is_c3.any() else False
                 )
 
                 is_c4 = token_atoms["name"] == "C4'"
                 idx_frame_c = is_c4.argmax()
                 c4_present = (
-                    token_atoms[idx_frame_c]["is_present"]
-                    if is_c4.any()
-                    else False
+                    token_atoms[idx_frame_c]["is_present"] if is_c4.any() else False
                 )
                 mask_frame = c1_present and c3_present and c4_present
             else:
@@ -1491,9 +1403,7 @@ def process_atom_features(
         atom_chirality.append(token_atoms_chirality)
         atom_idx += len(token_atoms)
 
-    disto_coords_ensemble = np.array(
-        disto_coords_ensemble
-    )  # (N_TOK, N_ENS, 3)
+    disto_coords_ensemble = np.array(disto_coords_ensemble)  # (N_TOK, N_ENS, 3)
 
     # Compute ensemble distogram
     L = len(data.tokens)
@@ -1515,9 +1425,7 @@ def process_atom_features(
         boundaries = torch.linspace(min_dist, max_dist, num_bins - 1)
         distogram = (t_dists.unsqueeze(-1) > boundaries).sum(dim=-1).long()
         # disto_target += one_hot(distogram, num_classes=num_bins)
-        disto_target[:, :, i, :] = one_hot(
-            distogram, num_classes=num_bins
-        )  # TODO1
+        disto_target[:, :, i, :] = one_hot(distogram, num_classes=num_bins)  # TODO1
 
     # Normalize distogram
     # disto_target = disto_target / disto_target.sum(-1)[..., None]  # remove TODO1
@@ -1589,9 +1497,7 @@ def process_atom_features(
     atom_to_token = one_hot(atom_to_token, num_classes=token_id + 1)
     token_to_rep_atom = one_hot(token_to_rep_atom, num_classes=len(atom_data))
     r_set_to_rep_atom = one_hot(r_set_to_rep_atom, num_classes=len(atom_data))
-    token_to_center_atom = one_hot(
-        token_to_center_atom, num_classes=len(atom_data)
-    )
+    token_to_center_atom = one_hot(token_to_center_atom, num_classes=len(atom_data))
 
     # Center the ground truth coordinates
     center = (coords * resolved_mask[None, :, None]).sum(dim=1)
@@ -1645,9 +1551,7 @@ def process_atom_features(
             token_to_rep_atom = pad_dim(token_to_rep_atom, 0, pad_len)
             r_set_to_rep_atom = pad_dim(r_set_to_rep_atom, 0, pad_len)
             token_to_center_atom = pad_dim(token_to_center_atom, 0, pad_len)
-            disto_target = pad_dim(
-                pad_dim(disto_target, 0, pad_len), 1, pad_len
-            )
+            disto_target = pad_dim(pad_dim(disto_target, 0, pad_len), 1, pad_len)
             disto_coords_ensemble = pad_dim(disto_coords_ensemble, 1, pad_len)
 
             if compute_frames:
@@ -1730,9 +1634,7 @@ def process_msa_features(
 
     # Prepare features
     assert torch.all(msa >= 0) and torch.all(msa < const.num_tokens)
-    msa_one_hot = torch.nn.functional.one_hot(
-        msa, num_classes=const.num_tokens
-    )
+    msa_one_hot = torch.nn.functional.one_hot(msa, num_classes=const.num_tokens)
     msa_mask = torch.ones_like(msa)
     profile = msa_one_hot.float().mean(dim=0)
     has_deletion = deletion > 0
@@ -1897,9 +1799,7 @@ def process_template_features(
     # Group templates by name
     name_to_templates: dict[str, list[TemplateInfo]] = {}
     for template_info in data.record.templates:
-        name_to_templates.setdefault(template_info.name, []).append(
-            template_info
-        )
+        name_to_templates.setdefault(template_info.name, []).append(template_info)
 
     # Map chain name to asym_id
     chain_name_to_asym_id = {}
@@ -1908,9 +1808,7 @@ def process_template_features(
 
     # Compute the offset
     template_features = []
-    for template_id, (template_name, templates) in enumerate(
-        name_to_templates.items()
-    ):
+    for template_id, (template_name, templates) in enumerate(name_to_templates.items()):
         row_tokens = []
         template_structure = data.templates[template_name]
         template_tokens = data.template_tokens[template_name]
@@ -1945,9 +1843,7 @@ def process_template_features(
         row_features = compute_template_features(data, row_tokens, max_tokens)
         row_features["template_force"] = torch.tensor(template.force)
         row_features["template_force_threshold"] = torch.tensor(
-            template.threshold
-            if template.threshold is not None
-            else float("inf"),
+            template.threshold if template.threshold is not None else float("inf"),
             dtype=torch.float32,
         )
         template_features.append(row_features)
@@ -2008,9 +1904,7 @@ def process_ensemble_features(
         The ensemble features.
 
     """
-    assert num_ensembles > 0, (
-        "Number of conformers sampled must be greater than 0."
-    )
+    assert num_ensembles > 0, "Number of conformers sampled must be greater than 0."
 
     # Number of available conformers in the structure
     # s_ensemble_num = min(len(cropped.structure.ensemble), 24)  # Limit to 24 conformers DEBUG: TODO: remove !
@@ -2025,9 +1919,7 @@ def process_ensemble_features(
     else:
         if ensemble_sample_replacement:
             # Used in training
-            ensemble_ref_idxs = random.integers(
-                0, s_ensemble_num, (num_ensembles,)
-            )
+            ensemble_ref_idxs = random.integers(0, s_ensemble_num, (num_ensembles,))
         else:
             # Used in validation
             if s_ensemble_num < num_ensembles:
@@ -2053,12 +1945,8 @@ def process_residue_constraint_features(data: Tokenized) -> dict[str, Tensor]:
         chiral_atom_constraints = residue_constraints.chiral_atom_constraints
         stereo_bond_constraints = residue_constraints.stereo_bond_constraints
         planar_bond_constraints = residue_constraints.planar_bond_constraints
-        planar_ring_5_constraints = (
-            residue_constraints.planar_ring_5_constraints
-        )
-        planar_ring_6_constraints = (
-            residue_constraints.planar_ring_6_constraints
-        )
+        planar_ring_5_constraints = residue_constraints.planar_ring_5_constraints
+        planar_ring_6_constraints = residue_constraints.planar_ring_6_constraints
 
         rdkit_bounds_index = torch.tensor(
             rdkit_bounds_constraints["atom_idxs"].copy(), dtype=torch.long
@@ -2152,12 +2040,8 @@ def process_chain_feature_constraints(data: Tokenized) -> dict[str, Tensor]:
         for connection in structure.bonds:
             if connection["chain_1"] == connection["chain_2"]:
                 continue
-            connected_chain_index.append(
-                [connection["chain_1"], connection["chain_2"]]
-            )
-            connected_atom_index.append(
-                [connection["atom_1"], connection["atom_2"]]
-            )
+            connected_chain_index.append([connection["chain_1"], connection["chain_2"]])
+            connected_atom_index.append([connection["atom_1"], connection["atom_2"]])
         if len(connected_chain_index) > 0:
             connected_chain_index = torch.tensor(
                 connected_chain_index, dtype=torch.long
@@ -2180,9 +2064,7 @@ def process_chain_feature_constraints(data: Tokenized) -> dict[str, Tensor]:
             if chain_i["entity_id"] == chain_j["entity_id"]:
                 symmetric_chain_index.append([i, j])
     if len(symmetric_chain_index) > 0:
-        symmetric_chain_index = torch.tensor(
-            symmetric_chain_index, dtype=torch.long
-        ).T
+        symmetric_chain_index = torch.tensor(symmetric_chain_index, dtype=torch.long).T
     else:
         symmetric_chain_index = torch.empty((2, 0), dtype=torch.long)
     return {
@@ -2194,12 +2076,8 @@ def process_chain_feature_constraints(data: Tokenized) -> dict[str, Tensor]:
 
 def process_contact_feature_constraints(
     data: Tokenized,
-    inference_pocket_constraints: list[
-        tuple[int, list[tuple[int, int]], float]
-    ],
-    inference_contact_constraints: list[
-        tuple[tuple[int, int], tuple[int, int], float]
-    ],
+    inference_pocket_constraints: list[tuple[int, list[tuple[int, int]], float]],
+    inference_contact_constraints: list[tuple[tuple[int, int], tuple[int, int], float]],
 ):
     token_data = data.tokens
     union_idx = 0
@@ -2228,15 +2106,11 @@ def process_contact_feature_constraints(
                     ),
                 ).T
                 pair_index.append(atom_idx_pairs)
-                union_index.append(
-                    torch.full((atom_idx_pairs.shape[1],), union_idx)
-                )
+                union_index.append(torch.full((atom_idx_pairs.shape[1],), union_idx))
                 negation_mask.append(
                     torch.ones((atom_idx_pairs.shape[1],), dtype=torch.bool)
                 )
-                thresholds.append(
-                    torch.full((atom_idx_pairs.shape[1],), max_distance)
-                )
+                thresholds.append(torch.full((atom_idx_pairs.shape[1],), max_distance))
                 union_idx += 1
 
     for token1, token2, max_distance, force in inference_contact_constraints:
@@ -2253,12 +2127,10 @@ def process_contact_feature_constraints(
             ):
                 for idx2, _token2 in enumerate(token_data):
                     if (
-                        _token2["mol_type"]
-                        != const.chain_type_ids["NONPOLYMER"]
+                        _token2["mol_type"] != const.chain_type_ids["NONPOLYMER"]
                         and (_token2["asym_id"], _token2["res_idx"]) == token2
                     ) or (
-                        _token2["mol_type"]
-                        == const.chain_type_ids["NONPOLYMER"]
+                        _token2["mol_type"] == const.chain_type_ids["NONPOLYMER"]
                         and (_token2["asym_id"], _token2["atom_idx"]) == token2
                     ):
                         atom_idx_pairs = torch.cartesian_prod(
@@ -2276,14 +2148,10 @@ def process_contact_feature_constraints(
                             torch.full((atom_idx_pairs.shape[1],), union_idx)
                         )
                         negation_mask.append(
-                            torch.ones(
-                                (atom_idx_pairs.shape[1],), dtype=torch.bool
-                            )
+                            torch.ones((atom_idx_pairs.shape[1],), dtype=torch.bool)
                         )
                         thresholds.append(
-                            torch.full(
-                                (atom_idx_pairs.shape[1],), max_distance
-                            )
+                            torch.full((atom_idx_pairs.shape[1],), max_distance)
                         )
                         union_idx += 1
                         break
@@ -2482,9 +2350,7 @@ class Boltz2Featurizer:
         chain_constraint_features = {}
         contact_constraint_features = {}
         if compute_constraint_features:
-            residue_constraint_features = process_residue_constraint_features(
-                data
-            )
+            residue_constraint_features = process_residue_constraint_features(data)
             chain_constraint_features = process_chain_feature_constraints(data)
             contact_constraint_features = process_contact_feature_constraints(
                 data=data,

@@ -31,9 +31,7 @@ def bfactor_loss_fn(
         bfactor_atom = feats["bfactor"].unsqueeze(-1)  # (B, L)
         bfactor_token = torch.bmm(token_to_rep_atom.float(), bfactor_atom)
 
-        boundaries = torch.linspace(
-            0, 100, bins - 1, device=bfactor_token.device
-        )
+        boundaries = torch.linspace(0, 100, bins - 1, device=bfactor_token.device)
         bfactor_token_bin = (bfactor_token > boundaries).sum(dim=-1).long()
         bfactor_target = torch.nn.functional.one_hot(
             bfactor_token_bin, num_classes=bins

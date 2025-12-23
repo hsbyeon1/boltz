@@ -203,9 +203,7 @@ chirality_types = [
     "CHI_TRIGONALBIPYRAMIDAL",
     "CHI_OTHER",
 ]
-chirality_type_ids = {
-    chirality: i for i, chirality in enumerate(chirality_types)
-}
+chirality_type_ids = {chirality: i for i, chirality in enumerate(chirality_types)}
 unk_chirality_type = "CHI_OTHER"
 
 hybridization_map = [
@@ -219,9 +217,7 @@ hybridization_map = [
     "OTHER",
     "UNSPECIFIED",
 ]
-hybridization_type_ids = {
-    hybrid: i for i, hybrid in enumerate(hybridization_map)
-}
+hybridization_type_ids = {hybrid: i for i, hybrid in enumerate(hybridization_map)}
 unk_hybridization_type = "UNSPECIFIED"
 
 # fmt: off

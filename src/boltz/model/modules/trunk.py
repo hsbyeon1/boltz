@@ -109,9 +109,7 @@ class InputEmbedder(nn.Module):
             )
         else:
             a, _, _, _, _ = self.atom_attention_encoder(feats)
-        s = torch.cat(
-            [a, res_type, profile, deletion_mean, pocket_feature], dim=-1
-        )
+        s = torch.cat([a, res_type, profile, deletion_mean, pocket_feature], dim=-1)
         return s
 
 
@@ -261,9 +259,7 @@ class MSAModule(nn.Module):
 
         # Compute MSA embeddings
         if self.use_paired_feature:
-            m = torch.cat(
-                [msa, has_deletion, deletion_value, is_paired], dim=-1
-            )
+            m = torch.cat([msa, has_deletion, deletion_value, is_paired], dim=-1)
         else:
             m = torch.cat([msa, has_deletion, deletion_value], dim=-1)
 
@@ -412,9 +408,7 @@ class MSALayer(nn.Module):
             use_kernels=use_kernels,
         )
 
-        dropout = get_dropout_mask(
-            self.z_dropout, z, self.training, columnwise=True
-        )
+        dropout = get_dropout_mask(self.z_dropout, z, self.training, columnwise=True)
         z = z + dropout * self.tri_att_end(
             z,
             mask=token_mask,
@@ -641,9 +635,7 @@ class PairformerLayer(nn.Module):
             use_kernels=use_kernels,
         )
 
-        dropout = get_dropout_mask(
-            self.dropout, z, self.training, columnwise=True
-        )
+        dropout = get_dropout_mask(self.dropout, z, self.training, columnwise=True)
         z = z + dropout * self.tri_att_end(
             z,
             mask=pair_mask,

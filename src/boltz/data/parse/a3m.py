@@ -84,9 +84,7 @@ def _parse_a3m(  # noqa: C901
         del_start = len(deletions)
         del_end = del_start + len(deletion)
 
-        sequences.append(
-            (seq_idx, taxonomy_id, res_start, res_end, del_start, del_end)
-        )
+        sequences.append((seq_idx, taxonomy_id, res_start, res_end, del_start, del_end))
         residues.extend(residue)
         deletions.extend(deletion)
 

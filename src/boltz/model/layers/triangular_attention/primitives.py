@@ -118,9 +118,7 @@ class Linear(nn.Linear):
         if d is torch.bfloat16:
             with torch.autocast("cuda", enabled=False):
                 bias = self.bias.to(dtype=d) if self.bias is not None else None
-                return nn.functional.linear(
-                    input, self.weight.to(dtype=d), bias
-                )
+                return nn.functional.linear(input, self.weight.to(dtype=d), bias)
 
         return nn.functional.linear(input, self.weight, self.bias)
 
@@ -376,9 +374,7 @@ def _trifast_attn(q, k, v, biases):
     orig_n_dims = len(q.shape)
 
     if len(biases) != 2:
-        raise ValueError(
-            f"Trifast expects two bias terms, found {len(biases)}"
-        )
+        raise ValueError(f"Trifast expects two bias terms, found {len(biases)}")
 
     mask, b = biases
 
@@ -395,9 +391,7 @@ def _trifast_attn(q, k, v, biases):
         mask = mask.unsqueeze(0)
 
     if len(q.shape) != 5:
-        raise ValueError(
-            f"Trifast expects q/k/v to be 5D, found {len(q.shape)}"
-        )
+        raise ValueError(f"Trifast expects q/k/v to be 5D, found {len(q.shape)}")
 
     # Reorder q/k/v
     q = rearrange(q, "b i h j d -> b h i j d")

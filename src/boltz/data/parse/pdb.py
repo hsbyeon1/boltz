@@ -1,8 +1,10 @@
-from typing import Optional
-from rdkit.Chem.rdchem import Mol
-import gemmi
 from tempfile import NamedTemporaryFile
-from boltz.data.parse.mmcif import parse_mmcif, ParsedStructure
+from typing import Optional
+
+import gemmi
+from rdkit.Chem.rdchem import Mol
+
+from boltz.data.parse.mmcif import ParsedStructure, parse_mmcif
 
 
 def parse_pdb(

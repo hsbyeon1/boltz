@@ -30,9 +30,7 @@ def compute_frame_pred(
         ).squeeze(-1)
 
     B, N, _ = pred_atom_coords.shape
-    pred_atom_coords = pred_atom_coords.reshape(
-        B // multiplicity, multiplicity, -1, 3
-    )
+    pred_atom_coords = pred_atom_coords.reshape(B // multiplicity, multiplicity, -1, 3)
     frames_idx_pred = (
         frames_idx_true.clone()
         .repeat_interleave(multiplicity, 0)
@@ -44,17 +42,12 @@ def compute_frame_pred(
         token_idx = 0
         atom_idx = 0
         for id in torch.unique(asym_id_token[i]):
-            mask_chain_token = (asym_id_token[i] == id) * feats[
-                "token_pad_mask"
-            ][i]
-            mask_chain_atom = (asym_id_atom[i] == id) * feats["atom_pad_mask"][
-                i
-            ]
+            mask_chain_token = (asym_id_token[i] == id) * feats["token_pad_mask"][i]
+            mask_chain_atom = (asym_id_atom[i] == id) * feats["atom_pad_mask"][i]
             num_tokens = int(mask_chain_token.sum().item())
             num_atoms = int(mask_chain_atom.sum().item())
             if (
-                feats["mol_type"][i, token_idx]
-                != const.chain_type_ids["NONPOLYMER"]
+                feats["mol_type"][i, token_idx] != const.chain_type_ids["NONPOLYMER"]
                 or num_atoms < 3
             ):
                 token_idx += num_tokens
@@ -70,9 +63,7 @@ def compute_frame_pred(
             if inference:
                 resolved_pair = 1 - (
                     feats["atom_pad_mask"][i][mask_chain_atom.bool()][None, :]
-                    * feats["atom_pad_mask"][i][mask_chain_atom.bool()][
-                        :, None
-                    ]
+                    * feats["atom_pad_mask"][i][mask_chain_atom.bool()][:, None]
                 ).to(torch.float32)
                 resolved_pair[resolved_pair == 1] = torch.inf
                 indices = torch.sort(dist_mat + resolved_pair, axis=2).indices
@@ -97,9 +88,7 @@ def compute_frame_pred(
                 + atom_idx
             )
             try:
-                frames_idx_pred[i, :, token_idx : token_idx + num_atoms, :] = (
-                    frames
-                )
+                frames_idx_pred[i, :, token_idx : token_idx + num_atoms, :] = frames
             except Exception as e:
                 print(f"Failed to process {feats['pdb_id']} due to {e}")
             token_idx += num_tokens
@@ -120,9 +109,7 @@ def compute_frame_pred(
         frames_expanded[:, 1] - frames_expanded[:, 0],
         frames_expanded[:, 1] - frames_expanded[:, 2],
     ).reshape(B // multiplicity, multiplicity, -1)
-    return frames_idx_pred, mask_collinear_pred * feats["token_pad_mask"][
-        :, None, :
-    ]
+    return frames_idx_pred, mask_collinear_pred * feats["token_pad_mask"][:, None, :]
 
 
 def compute_aggregated_metric(logits, end=1.0):
@@ -153,9 +140,7 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
     # mask overlapping, collinear tokens and ions (invalid frames)
     mask_pad = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
     maski = mask_collinear_pred.reshape(-1, mask_collinear_pred.shape[-1])
-    pair_mask_ptm = (
-        maski[:, :, None] * mask_pad[:, None, :] * mask_pad[:, :, None]
-    )
+    pair_mask_ptm = maski[:, :, None] * mask_pad[:, None, :] * mask_pad[:, :, None]
     asym_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
     pair_mask_iptm = (
         maski[:, :, None]
@@ -190,9 +175,7 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
     # compute ligand and protein iPTM
     token_type = feats["mol_type"]
     token_type = token_type.repeat_interleave(multiplicity, 0)
-    is_ligand_token = (
-        token_type == const.chain_type_ids["NONPOLYMER"]
-    ).float()
+    is_ligand_token = (token_type == const.chain_type_ids["NONPOLYMER"]).float()
     is_protein_token = (token_type == const.chain_type_ids["PROTEIN"]).float()
 
     ligand_iptm_mask = (

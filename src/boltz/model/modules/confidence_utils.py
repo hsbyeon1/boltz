@@ -86,9 +86,7 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
     )
     mask_pad = feats["token_pad_mask"].repeat_interleave(multiplicity, 0)
     maski = mask_collinear_pred.reshape(-1, mask_collinear_pred.shape[-1])
-    pair_mask_ptm = (
-        maski[:, :, None] * mask_pad[:, None, :] * mask_pad[:, :, None]
-    )
+    pair_mask_ptm = maski[:, :, None] * mask_pad[:, None, :] * mask_pad[:, :, None]
     asym_id = feats["asym_id"].repeat_interleave(multiplicity, 0)
     pair_mask_iptm = (
         maski[:, :, None]
@@ -127,9 +125,7 @@ def compute_ptms(logits, x_preds, feats, multiplicity):
     # compute ligand and protein ipTM
     token_type = feats["mol_type"]
     token_type = token_type.repeat_interleave(multiplicity, 0)
-    is_ligand_token = (
-        token_type == const.chain_type_ids["NONPOLYMER"]
-    ).float()
+    is_ligand_token = (token_type == const.chain_type_ids["NONPOLYMER"]).float()
     is_protein_token = (token_type == const.chain_type_ids["PROTEIN"]).float()
 
     ligand_iptm_mask = (

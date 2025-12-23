@@ -117,9 +117,7 @@ class ExponentialMovingAverage:
             raise ValueError("Decay must be between 0 and 1")
         self.decay = decay
         self.num_updates = 0 if use_num_updates else None
-        self.shadow_params = [
-            p.clone().detach() for p in parameters if p.requires_grad
-        ]
+        self.shadow_params = [p.clone().detach() for p in parameters if p.requires_grad]
         self.collected_params = []
 
     def update(self, parameters):
@@ -134,9 +132,7 @@ class ExponentialMovingAverage:
         decay = self.decay
         if self.num_updates is not None:
             self.num_updates += 1
-            decay = min(
-                decay, (1 + self.num_updates) / (10 + self.num_updates)
-            )
+            decay = min(decay, (1 + self.num_updates) / (10 + self.num_updates))
         one_minus_decay = 1.0 - decay
         with torch.no_grad():
             parameters = [p for p in parameters if p.requires_grad]
@@ -208,9 +204,7 @@ class ExponentialMovingAverage:
         ]
 
     def to(self, device):
-        self.shadow_params = [
-            tensor.to(device) for tensor in self.shadow_params
-        ]
+        self.shadow_params = [tensor.to(device) for tensor in self.shadow_params]
 
 
 # the following is copied from Torch3D, BSD License, Copyright (c) Meta Platforms, Inc. and affiliates.

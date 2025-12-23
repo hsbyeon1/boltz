@@ -1,8 +1,8 @@
+import unittest
+
 import pytorch_lightning
 import torch
 import torch.nn as nn
-
-import unittest
 
 from boltz.model.layers.triangular_attention.attention import TriangleAttention
 
@@ -31,7 +31,5 @@ class OuterProductMeanTest(unittest.TestCase):
             exp_output = self.layer(x=m, mask=mask)
             for chunk_size in chunk_sizes:
                 with self.subTest(chunk_size=chunk_size):
-                    act_output = self.layer(
-                        x=m, mask=mask, chunk_size=chunk_size
-                    )
+                    act_output = self.layer(x=m, mask=mask, chunk_size=chunk_size)
                     assert torch.allclose(exp_output, act_output, atol=1e-8)

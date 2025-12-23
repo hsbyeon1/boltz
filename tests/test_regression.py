@@ -1,20 +1,17 @@
 import os
 import pickle
-from dataclasses import asdict
 import pprint
-
-import torch
-import torch.nn as nn
+import unittest
+from dataclasses import asdict
 
 import pytest
-import unittest
-
+import test_utils
+import torch
+import torch.nn as nn
+from boltz.model.model import Boltz1
 from lightning_fabric import seed_everything
 
 from boltz.main import MODEL_URL
-from boltz.model.model import Boltz1
-
-import test_utils
 
 tests_dir = os.path.dirname(os.path.abspath(__file__))
 test_data_dir = os.path.join(tests_dir, "data")
@@ -37,13 +34,9 @@ class RegressionTester(unittest.TestCase):
         )
         if not os.path.exists(regression_feats_path):
             regression_feats_url = "https://www.dropbox.com/scl/fi/1avbcvoor5jcnvpt07tp6/ligand_regression_feats.pkl?rlkey=iwtm9gpxgrbp51jbizq937pqf&st=jnbky253&dl=1"
-            test_utils.download_file(
-                regression_feats_url, regression_feats_path
-            )
+            test_utils.download_file(regression_feats_url, regression_feats_path)
 
-        regression_feats = torch.load(
-            regression_feats_path, map_location=device
-        )
+        regression_feats = torch.load(regression_feats_path, map_location=device)
         model_module: nn.Module = Boltz1.load_from_checkpoint(
             checkpoint, map_location=device
         )
@@ -64,23 +57,15 @@ class RegressionTester(unittest.TestCase):
 
     def test_input_embedder(self):
         exp_s_inputs = self.regression_feats["s_inputs"]
-        act_s_inputs = self.model_module.input_embedder(
-            self.regression_feats["feats"]
-        )
+        act_s_inputs = self.model_module.input_embedder(self.regression_feats["feats"])
 
         assert torch.allclose(exp_s_inputs, act_s_inputs, atol=1e-5)
 
     def test_rel_pos(self):
-        exp_rel_pos_encoding = self.regression_feats[
-            "relative_position_encoding"
-        ]
-        act_rel_pos_encoding = self.model_module.rel_pos(
-            self.regression_feats["feats"]
-        )
+        exp_rel_pos_encoding = self.regression_feats["relative_position_encoding"]
+        act_rel_pos_encoding = self.model_module.rel_pos(self.regression_feats["feats"])
 
-        assert torch.allclose(
-            exp_rel_pos_encoding, act_rel_pos_encoding, atol=1e-5
-        )
+        assert torch.allclose(exp_rel_pos_encoding, act_rel_pos_encoding, atol=1e-5)
 
     @pytest.mark.slow
     def test_structure_output(self):
@@ -89,9 +74,7 @@ class RegressionTester(unittest.TestCase):
         z = self.regression_feats["z"]
         s_inputs = self.regression_feats["s_inputs"]
         feats = self.regression_feats["feats"]
-        relative_position_encoding = self.regression_feats[
-            "relative_position_encoding"
-        ]
+        relative_position_encoding = self.regression_feats["relative_position_encoding"]
         multiplicity_diffusion_train = self.regression_feats[
             "multiplicity_diffusion_train"
         ]

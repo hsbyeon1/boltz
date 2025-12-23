@@ -76,9 +76,7 @@ def evaluate_structure(
     # Evaluate ligand metrics
     out_path = Path(outdir) / f"{name}_ligand.json"
     if out_path.exists():
-        print(
-            f"Skipping recomputation of {name} as ligand json file already exists"
-        )  # noqa: T201
+        print(f"Skipping recomputation of {name} as ligand json file already exists")  # noqa: T201
     else:
         subprocess.run(
             OST_COMPARE_LIGAND.format(
@@ -109,9 +107,7 @@ def main(args):
             for model_id in range(5):
                 # Split the input data
                 if args.format == "af3":
-                    pred_path = (
-                        folder / f"seed-1_sample-{model_id}" / "model.cif"
-                    )
+                    pred_path = folder / f"seed-1_sample-{model_id}" / "model.cif"
                 elif args.format == "chai":
                     pred_path = folder / f"pred.model_idx_{model_id}.cif"
                 elif args.format == "boltz":
